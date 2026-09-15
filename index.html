@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบ ม.10 — ระบบปรับปรุงข้อมูลที่ดิน v4.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-th   : 'Sarabun','TH Sarabun New','Cordia New',sans-serif;
+  --fs-cell   : 11.5px;
+  --fs-head   : 11px;
+  --lh        : 1.35;
+  --row-h     : 28px;
+  --cell-px   : 3px;
+  --cell-py   : 2px;
+  --c-border  : #d1d5db;
+  --c-head-bg1: #f1f5f9;
+  --c-head-bg2: #e2e8f0;
+  --c-even    : #f5f8ff;
+  --c-hover   : #eef2ff;
+  --c-focus   : #fefce8;
+  --c-text    : #1e293b;
+  --c-muted   : #64748b;
+  --radius    : 12px;
+  --pfs       : 6.3pt;
+  --pfs-h     : 5.9pt;
+  --plh       : 1.2;
+}
+*,*::before,*::after { font-family:var(--font-th); box-sizing:border-box; margin:0; padding:0; }
+html { -webkit-text-size-adjust:100%; }
+.gradient-bg { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 30%,#4f46e5 60%,#7c3aed 100%); }
+.card        { background:#fff; border-radius:var(--radius); box-shadow:0 2px 12px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.04); }
+.fade-in     { animation:fadeIn .45s cubic-bezier(.22,1,.36,1) both; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+.tb {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:7px 13px; border-radius:9px; border:none; cursor:pointer;
+  font-size:12.5px; font-weight:500; white-space:nowrap; color:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.14);
+  transition:transform .15s,box-shadow .15s;
+}
+.tb:hover  { transform:translateY(-2px); box-shadow:0 5px 14px rgba(0,0,0,.2); }
+.tb:active { transform:none; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.tb svg    { width:15px; height:15px; flex-shrink:0; }
+.tb-grn { background:linear-gradient(135deg,#16a34a,#22c55e); }
+.tb-blu { background:linear-gradient(135deg,#2563eb,#3b82f6); }
+.tb-pur { background:linear-gradient(135deg,#7c3aed,#a855f7); }
+.tb-yel { background:linear-gradient(135deg,#ca8a04,#eab308); }
+.tb-gry { background:linear-gradient(135deg,#475569,#64748b); }
+.tb-tel { background:linear-gradient(135deg,#0d9488,#14b8a6); }
+.tb-red { background:linear-gradient(135deg,#dc2626,#ef4444); }
+.tb-sky { background:linear-gradient(135deg,#0284c7,#0ea5e9); }
+.tb-org { background:linear-gradient(135deg,#ea580c,#f59e0b); }
+.sep    { width:1px; height:22px; background:linear-gradient(180deg,transparent,#d1d5db,transparent); margin:0 4px; }
+.tab-btn { padding:9px 18px; border-radius:9px 9px 0 0; font-weight:500; cursor:pointer;
+           transition:all .15s; border:1px solid transparent; background:#e2e8f0; color:#64748b; font-size:13px; }
+.tab-btn.active { background:#fff; color:#4f46e5; border-color:#d1d5db; border-bottom-color:#fff; position:relative; z-index:5; }
+.tab-btn:hover:not(.active){ background:#f1f5f9; color:#475569; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.toast {
+  position:fixed; top:18px; right:18px; padding:12px 20px; border-radius:10px;
+  color:#fff; font-weight:500; font-size:13.5px; box-shadow:0 8px 28px rgba(0,0,0,.22);
+  z-index:9999; animation:toastIn .3s cubic-bezier(.22,1,.36,1);
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(36px) scale(.94)} to{opacity:1;transform:none} }
+.tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%); }
+.tbl-wrap::after{content:'';display:block;height:0;clear:both;}
+.data-table {
+  width:100%; border-collapse:collapse; table-layout:fixed;
+  font-size:var(--fs-cell); line-height:var(--lh); color:var(--c-text);
+}
+.data-table thead { position:sticky; top:0; z-index:10; }
+.data-table thead th {
+  background:linear-gradient(180deg,var(--c-head-bg1) 0%,var(--c-head-bg2) 100%);
+  border:1px solid var(--c-border);
+  padding:4px var(--cell-px);
+  font-size:var(--fs-head); font-weight:600;
+  text-align:center; vertical-align:middle;
+  white-space:normal; word-break:keep-all; overflow-wrap:break-word;
+  line-height:1.25;
+}
+.print-header-row { display:none; }
+.data-table thead th.no-wrap { white-space:nowrap; }
+.data-table tbody tr { transition:background .1s; }
+.data-table tbody tr:nth-child(even) { background:var(--c-even); }
+.data-table tbody tr:hover           { background:var(--c-hover); }
+.data-table tbody td {
+  border:1px solid #e9ecef;
+  padding:var(--cell-py) var(--cell-px);
+  vertical-align:middle;
+  overflow:hidden;
+  content-visibility:auto;
+  contain-intrinsic-size:auto var(--row-h);
+}
+.data-table tbody td input[type=text] {
+  display:block; width:100%; min-height:24px; height:auto;
+  padding:2px 3px; border:0; background:transparent;
+  font-family:var(--font-th); font-size:var(--fs-cell); line-height:var(--lh);
+  color:var(--c-text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.data-table tbody td input[type=text]:focus {
+  background:var(--c-focus); outline:none;
+  white-space:normal; overflow:visible; text-overflow:clip;
+}
+td.no-wrap-cell, td.no-wrap-cell input { white-space:nowrap !important; overflow:hidden !important; }
+td.wrap-cell input { white-space:normal; overflow:hidden; text-overflow:ellipsis; }
+
+.data-table tbody td textarea {
+  display:block; width:100%; min-height:31px; height:31px;
+  padding:2px 3px; border:0; background:transparent; resize:none;
+  font-family:var(--font-th); font-size:var(--fs-cell); line-height:1.2;
+  color:var(--c-text); overflow:hidden;
+}
+.data-table tbody td textarea:focus {
+  background:var(--c-focus); outline:none; min-height:48px; height:48px;
+}
+.data-table tbody td input[type=text],
+.data-table tbody td textarea {
+  border-radius:4px;
+}
+.layout-hint {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:9px 14px; margin:0; border-top:1px solid #e5e7eb;
+  background:linear-gradient(180deg,#fbfdff 0%,#f1f5ff 100%);
+  font-size:11px; color:#334155;
+}
+.layout-hint .tag {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:999px; font-weight:600;
+  border:1px solid #dbeafe; background:#eff6ff; color:#1d4ed8;
+}
+.layout-hint .tag.mid { border-color:#d1fae5; background:#ecfdf5; color:#047857; }
+.layout-hint .tag.long { border-color:#ede9fe; background:#f5f3ff; color:#6d28d9; }
+.layout-hint .tag.a4 { border-color:#fed7aa; background:#fff7ed; color:#c2410c; }
+body.print-a4 .layout-hint { display:none !important; }
+.pager { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pager button { padding:4px 10px; border-radius:7px; border:1px solid #d1d5db;
+                background:#fff; cursor:pointer; font-size:12px; transition:all .15s; }
+.pager button:hover   { background:#f1f5f9; }
+.pager button.active  { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+.pager button:disabled{ opacity:.4; cursor:default; }
+@media print {
+  @page { size:A4 landscape; margin:7mm 6mm 11mm 6mm; }
+  *,*::before,*::after {
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+  html,body { background:#fff !important; font-size:var(--pfs); line-height:var(--plh); margin:0 !important; padding:0 !important; }
+  .no-print { display:none !important; }
+  .container-wrap { max-width:100% !important; padding:0 !important; margin:0 !important; }
+  .card           { box-shadow:none !important; border-radius:0 !important; }
+  .print-header   { display:block !important; }
+  .tab-content         { display:none !important; }
+  .tab-content.active  { display:block !important; }
+  .tbl-wrap { overflow:visible !important; }
+  .data-table {
+    width:100% !important; max-width:100% !important;
+    border-collapse:collapse !important; table-layout:fixed !important;
+    font-size:var(--pfs) !important; line-height:var(--plh) !important;
+    page-break-inside:auto;
+  }
+  thead { display:table-header-group !important; }
+  .print-header-row { display:table-row !important; }
+  .print-header-row td {
+    border:none !important; background:#fff !important;
+    text-align:center !important; vertical-align:middle !important;
+    padding:0 0 1pt 0 !important; white-space:normal !important;
+  }
+  .print-header-row.ph-title td { font-size:9.5pt !important; font-weight:700 !important; }
+  .print-header-row.ph-sub   td { font-size:7.5pt !important; font-weight:400 !important; }
+  .data-table thead th {
+    background:#ecf0f5 !important;
+    border:0.5pt solid #333 !important;
+    padding:1.5pt 1pt !important;
+    font-size:var(--pfs-h) !important; font-weight:700 !important;
+    text-align:center !important; vertical-align:middle !important;
+    white-space:normal !important; word-break:keep-all !important;
+    line-height:1.2 !important;
+    position:static !important;
+  }
+  .data-table thead th.no-wrap { white-space:nowrap !important; }
+  .data-table tbody tr { page-break-inside:avoid !important; break-inside:avoid !important; }
+  .data-table tbody tr:nth-child(even) { background:#f4f6fb !important; }
+  .data-table tbody td {
+    border:0.45pt solid #555 !important;
+    padding:1.5pt 0.8pt !important;
+    vertical-align:middle !important;
+    font-size:var(--pfs) !important; line-height:var(--plh) !important;
+    overflow:visible !important;
+    content-visibility:visible !important;
+  }
+  .data-table tbody td input[type=text],
+  .data-table tbody td textarea {
+    border:none !important; background:transparent !important;
+    box-shadow:none !important; padding:0 0.8pt !important;
+    font-family:var(--font-th) !important;
+    font-size:var(--pfs) !important; line-height:var(--plh) !important;
+    color:#000 !important; width:100% !important; height:auto !important; min-height:0 !important;
+    white-space:normal !important; overflow:visible !important; resize:none !important;
+    text-overflow:clip !important; outline:none !important;
+  }
+  td.no-wrap-cell input, td.no-wrap-cell textarea { white-space:nowrap !important; font-size:5.7pt !important; letter-spacing:-0.15pt !important; }
+  td.col-idcard  input, td.col-idcard textarea { font-size:5.5pt !important; letter-spacing:-0.25pt !important; }
+  .pager-row { display:none !important; }
+  .print-count { display:block !important; text-align:right; font-size:7pt; margin-top:2pt; }
+  col[data-k="seq"]    { width:1.47%  !important; }
+  col[data-k="parcel"] { width:5.51%  !important; }
+  col[data-k="docno"]  { width:4.41%  !important; }
+  col[data-k="scale"]  { width:3.68%  !important; }
+  col[data-k="landno"] { width:3.31%  !important; }
+  col[data-k="survey"] { width:4.04%  !important; }
+  col[data-k="rai"]    { width:2.21%  !important; }
+  col[data-k="ngan"]   { width:2.21%  !important; }
+  col[data-k="wa"]     { width:3.31%  !important; }
+  col[data-k="subwa"]  { width:2.57%  !important; }
+  col[data-k="coown"]  { width:2.57%  !important; }
+  col[data-k="idcard"] { width:6.99%  !important; }
+  col[data-k="title"]  { width:3.31%  !important; }
+  col[data-k="fname"]  { width:6.25%  !important; }
+  col[data-k="lname"]  { width:5.15%  !important; }
+  col[data-k="addr"]   { width:2.57%  !important; }
+  col[data-k="moo"]    { width:1.84%  !important; }
+  col[data-k="soi"]    { width:3.31%  !important; }
+  col[data-k="village"]{ width:3.68%  !important; }
+  col[data-k="road"]   { width:3.31%  !important; }
+  col[data-k="tambol"] { width:4.04%  !important; }
+  col[data-k="amphur"] { width:4.04%  !important; }
+  col[data-k="prov"]   { width:3.68%  !important; }
+  col[data-k="tel"]    { width:4.41%  !important; }
+  col[data-k="change"] { width:7.72%  !important; }
+  col[data-k="date"]   { width:4.41%  !important; }
+  .rounded-xl,.rounded-2xl,.rounded-lg { border-radius:0 !important; }
+  .fade-in { animation:none !important; }
+}
+@media (max-width:768px) {
+  .data-table { font-size:10px; }
+  .data-table thead th { font-size:9.5px; padding:3px 2px; }
+  .data-table tbody td input[type=text] { font-size:10px; }
+  .tb { padding:6px 10px; font-size:12px; }
+  .toolbar-wrap { padding:10px 0; }
+}
+@media (max-width:480px) {
+  .data-table { font-size:9.5px; }
+  .tb { padding:5px 8px; font-size:11.5px; }
+}
+.print-header { display:none; }
+@media print {
+  .print-header {
+    display:block; text-align:center;
+    margin-bottom:4pt; page-break-inside:avoid;
+  }
+  .print-header h1 { font-size:9.5pt; font-weight:700; margin:0 0 1.5pt; }
+  .print-header p  { font-size:7.5pt; margin:0 0 0.5pt; }
+}
+.print-count { display:none; }
+#importModal * { font-family:var(--font-th); box-sizing:border-box; }
+@media print { #importModal { display:none !important; } }
+</style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50">
+<div class="container-wrap mx-auto p-4 lg:px-8 lg:py-5" style="max-width:1700px">
+
+  <div class="gradient-bg rounded-2xl p-6 lg:p-8 mb-5 text-white shadow-xl no-print fade-in text-center relative overflow-hidden">
+    <div class="absolute inset-0 opacity-[.06]" style="background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><circle cx=%2220%22 cy=%2220%22 r=%221.5%22 fill=%22white%22/></svg>')"></div>
+    <div class="absolute -top-20 -right-20 w-56 h-56 bg-white/5 rounded-full blur-2xl"></div>
+    <h1 class="text-2xl lg:text-4xl font-bold mb-1 relative tracking-tight">แบบ ม.10</h1>
+    <p class="text-base lg:text-lg opacity-90 relative font-light">รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10</p>
+    <p class="text-sm opacity-70 mt-0.5 relative">แห่งพระราชบัญญัติภาษีที่ดินและสิ่งปลูกสร้าง พ.ศ. 2562</p>
+    <div class="mt-3 inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-xs opacity-70 tracking-wider backdrop-blur-sm relative">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+      โฉนด / น.ส.3ก / น.ส.3 &nbsp;·&nbsp; v4.3 — หลายเดือน/หลายปี + A4 Auto Layout + สรุปประจำปี + ศูนย์พิมพ์
+    </div>
+  </div>
+
+  <div class="card p-5 mb-5 no-print fade-in" style="animation-delay:.05s">
+    <h2 class="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+      <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      ข้อมูลส่วนหัวเอกสาร
+    </h2>
+    <div class="grid grid-cols-1 gap-3 mb-3">
+      <div><label class="block text-xs text-gray-500 mb-1 font-medium">องค์การบริหารส่วนตำบล/เทศบาล</label>
+        <input type="text" id="orgname" placeholder="เช่น องค์การบริหารส่วนตำบลละงู" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div><label class="block text-xs text-gray-500 mb-1 font-medium">ตำบล</label>
+        <input type="text" id="tambol" placeholder="เช่น ละงู" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></div>
+      <div><label class="block text-xs text-gray-500 mb-1 font-medium">อำเภอ</label>
+        <input type="text" id="amphur" placeholder="เช่น ละงู" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></div>
+      <div><label class="block text-xs text-gray-500 mb-1 font-medium">จังหวัด</label>
+        <input type="text" id="province" placeholder="เช่น สตูล" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></div>
+      <div><label class="block text-xs text-gray-500 mb-1 font-medium">ปี / เดือนที่กำลังทำงาน</label>
+        <div class="grid grid-cols-2 gap-2">
+          <select id="reportYear" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></select>
+          <select id="reportMonthNum" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 focus:border-indigo-400 outline-none transition"></select>
+        </div>
+        <input type="hidden" id="reportMonth">
+        <div id="monthDataSummary" class="text-[11px] text-indigo-600 mt-1 font-medium">เดือนนี้ 0 รายการ</div>
+      </div>
+    </div>
+
+    <div class="toolbar-wrap flex flex-wrap gap-2 items-center justify-center pt-4 mt-1 border-t border-gray-100">
+      <button onclick="addRowUI()" class="tb tb-grn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/></svg>เพิ่มแถว</button>
+      <div class="sep"></div>
+      <button onclick="triggerCSV()" class="tb tb-blu">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>นำเข้า CSV<span style="font-size:9px;opacity:.7;margin-left:2px">(Pipe/Comma)</span></button>
+      <input type="file" id="csvFile" accept=".csv" multiple class="hidden" onchange="handleCSV(event)">
+      <div class="sep"></div>
+      <button onclick="saveData(true)" class="tb tb-yel">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>บันทึก</button>
+      <button onclick="exportCurrentXLSX()" class="tb tb-pur">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Excel (แท็บนี้)</button>
+      <button onclick="openMultiExportModal()" class="tb tb-tel">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Export หลายเดือน</button>
+      <button onclick="openAnnualSummary()" class="tb tb-org">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>สรุปประจำปี</button>
+      <div class="sep"></div>
+      <button onclick="openPrintCenter()" class="tb tb-gry">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>พิมพ์เอกสาร</button>
+      <button onclick="exportPDF()" class="tb tb-sky">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>Export PDF</button>
+      <div class="sep"></div>
+      <button onclick="clearCurrentTab()" class="tb tb-red">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>ล้างแท็บนี้</button>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden fade-in" style="animation-delay:.1s">
+
+    <div class="flex gap-1 px-3 pt-3 no-print bg-gray-50 border-b border-gray-200 items-center flex-wrap">
+      <button class="tab-btn active" onclick="switchTab('chanote',event)">📄 โฉนด</button>
+      <button class="tab-btn"        onclick="switchTab('ns3a',event)">📋 น.ส.3ก</button>
+      <button class="tab-btn"        onclick="switchTab('ns3',event)">📃 น.ส.3</button>
+      <button class="tb tb-blu" style="margin-left:8px;padding:6px 12px;font-size:12px" onclick="triggerCSV()" title="นำเข้า CSV: เลขที่เอกสารสิทธิ์←PARCEL_NO, หน้าสำรวจ←SURVEY_NO">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>นำเข้า CSV ล่าสุด</button>
+    </div>
+
+    <div id="tab-chanote" class="tab-content active">
+      <div class="tbl-wrap"><table class="data-table" id="tbl-chanote"><thead id="th-chanote"></thead><tbody id="tb-chanote" data-tbody="chanote"></tbody></table></div>
+      <div class="pager-row no-print flex items-center justify-between flex-wrap gap-2 px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500" id="pg-chanote"></div>
+      <div class="print-count" id="pc-chanote"></div>
+    </div>
+
+    <div id="tab-ns3a" class="tab-content">
+      <div class="tbl-wrap"><table class="data-table" id="tbl-ns3a"><thead id="th-ns3a"></thead><tbody id="tb-ns3a" data-tbody="ns3a"></tbody></table></div>
+      <div class="pager-row no-print flex items-center justify-between flex-wrap gap-2 px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500" id="pg-ns3a"></div>
+      <div class="print-count" id="pc-ns3a"></div>
+    </div>
+
+    <div id="tab-ns3" class="tab-content">
+      <div class="tbl-wrap"><table class="data-table" id="tbl-ns3"><thead id="th-ns3"></thead><tbody id="tb-ns3" data-tbody="ns3"></tbody></table></div>
+      <div class="pager-row no-print flex items-center justify-between flex-wrap gap-2 px-4 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500" id="pg-ns3"></div>
+      <div class="print-count" id="pc-ns3"></div>
+    </div>
+
+    <div class="layout-hint no-print">
+      <span class="tag">คอลัมน์สั้น ล็อกความกว้าง</span>
+      <span class="tag mid">คอลัมน์กลาง ปรับตามเนื้อหา</span>
+      <span class="tag long">คอลัมน์ยาว ย่อ + ดูเต็มจาก Tooltip</span>
+      <span class="tag a4">พิมพ์ A4 แนวนอนอัตโนมัติ</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+const COLS = [
+  { k:'seq',    label:'ลำดับ',                sw:28,  size:'xs', noWrapHead:true,  noWrapCell:true,  align:'center', isSeq:true },
+  { k:'parcel', label:'รหัสแปลง<br>ที่ดิน',   sw:88,  size:'md', noWrapCell:true,  align:'center' },
+  { k:'docno',  label:'เลขที่<br>เอกสารสิทธิ์', sw:70, size:'sm', noWrapCell:true,  align:'center' },
+  { k:'scale',  label:'มาตราส่วน',              sw:60,  size:'sm', noWrapHead:true,  noWrapCell:true,  align:'center' },
+  { k:'landno', label:'เลขที่ดิน',              sw:54,  size:'sm', noWrapHead:true,  noWrapCell:true,  align:'center' },
+  { k:'survey', label:'หน้าสำรวจ',              sw:64,  size:'sm', noWrapHead:true,  noWrapCell:true,  align:'center' },
+  { k:'rai',    label:'ไร่',                    sw:34,  size:'xs', noWrapHead:true,  noWrapCell:true,  align:'center'  },
+  { k:'ngan',   label:'งาน',                    sw:34,  size:'xs', noWrapHead:true,  noWrapCell:true,  align:'center'  },
+  { k:'wa',     label:'ตาราง<br>วา',            sw:50,  size:'sm', noWrapCell:true,  align:'center'  },
+  { k:'subwa',  label:'subwa',                  sw:42,  size:'xs', noWrapHead:true,  noWrapCell:true,  align:'center'  },
+  { k:'coown',  label:'ผู้ถือ<br>ร่วม',          sw:40,  size:'xs', noWrapCell:true,  align:'center' },
+  { k:'idcard', label:'เลขบัตร<br>ประจำตัว',    sw:110, size:'lg', noWrapCell:true,  align:'center', cls:'col-idcard' },
+  { k:'title',  label:'คำนำหน้า',               sw:54,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'fname',  label:'ชื่อ',                   sw:100, size:'lg', noWrapHead:true,  wrapCell:true,  align:'center' },
+  { k:'lname',  label:'สกุล',                   sw:82,  size:'md', noWrapHead:true,  wrapCell:true,  align:'center' },
+  { k:'addr',   label:'บ้าน<br>เลขที่',         sw:42,  size:'xs', noWrapCell:true,  align:'center' },
+  { k:'moo',    label:'ม.',                      sw:28,  size:'xs', noWrapHead:true,  noWrapCell:true,  align:'center' },
+  { k:'soi',    label:'ซอย',                    sw:54,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'village',label:'หมู่บ้าน',               sw:60,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'road',   label:'ถนน',                    sw:54,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'tambol', label:'ตำบล',                   sw:64,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'amphur', label:'อำเภอ',                  sw:64,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'prov',   label:'จังหวัด',                sw:60,  size:'sm', noWrapHead:true,  align:'center' },
+  { k:'tel',    label:'เบอร์โทร',               sw:70,  size:'sm', noWrapHead:true,  noWrapCell:true,  align:'center' },
+  { k:'change', label:'รายการ<br>เปลี่ยนแปลง', sw:128, size:'xl', wrapCell:true,  align:'center' },
+  { k:'date',   label:'วันที่ทำ<br>นิติกรรม',   sw:70,  size:'sm', noWrapCell:true,  align:'center' },
+  { k:'_del',   label:'ลบ',                     sw:28,  size:'xs', noWrapHead:true,  align:'center', noPrint:true, isDel:true },
+];
+
+const DATA_COLS = COLS.filter(c => !c.isSeq && !c.isDel);
+const ALL_TABS  = ['chanote','ns3a','ns3'];
+const PAGE_SIZE = 200;
+
+const COL_LAYOUT = {
+  seq:{fixed:true, ideal:36, min:36, max:36, printPct:1.55},
+  parcel:{fixed:true, ideal:92, min:82, max:98, printPct:5.40},
+  docno:{fixed:true, ideal:72, min:66, max:78, printPct:4.10},
+  scale:{fixed:true, ideal:58, min:54, max:62, printPct:3.35},
+  landno:{fixed:true, ideal:52, min:48, max:58, printPct:3.10},
+  survey:{fixed:true, ideal:64, min:58, max:72, printPct:3.90},
+  rai:{fixed:true, ideal:34, min:32, max:36, printPct:2.10},
+  ngan:{fixed:true, ideal:34, min:32, max:36, printPct:2.10},
+  wa:{fixed:true, ideal:46, min:42, max:52, printPct:2.95},
+  subwa:{fixed:true, ideal:44, min:40, max:48, printPct:2.55},
+  coown:{fixed:true, ideal:42, min:40, max:46, printPct:2.45},
+  idcard:{fixed:true, ideal:112, min:104, max:118, printPct:6.80},
+  title:{fixed:true, ideal:50, min:46, max:56, printPct:3.05},
+  fname:{ideal:92, min:72, max:116, weight:1.1, printPct:5.90},
+  lname:{ideal:88, min:70, max:108, weight:1.0, printPct:5.20},
+  addr:{fixed:true, ideal:42, min:38, max:46, printPct:2.45},
+  moo:{fixed:true, ideal:30, min:28, max:34, printPct:1.85},
+  soi:{ideal:56, min:44, max:78, weight:0.55, printPct:3.30},
+  village:{ideal:68, min:54, max:104, weight:0.8, printPct:4.20},
+  road:{ideal:58, min:48, max:88, weight:0.65, printPct:3.45},
+  tambol:{ideal:74, min:58, max:108, weight:0.9, printPct:4.45},
+  amphur:{ideal:74, min:58, max:108, weight:0.9, printPct:4.45},
+  prov:{ideal:70, min:56, max:100, weight:0.8, printPct:4.15},
+  tel:{fixed:true, ideal:76, min:72, max:82, printPct:4.55},
+  change:{ideal:168, min:136, max:250, weight:2.6, printPct:9.65},
+  date:{fixed:true, ideal:86, min:82, max:90, printPct:5.10},
+  _del:{fixed:true, ideal:32, min:32, max:32, printPct:1.75}
+};
+const AUTO_LAYOUT_TARGET = 1380;
+
+function getLayoutMeta(col){ return COL_LAYOUT[col.k] || { ideal:col.sw||72, min:Math.max(36,(col.sw||72)-12), max:(col.sw||72)+18, weight:1, printPct:4 }; }
+function calculateColWidths(targetPx = AUTO_LAYOUT_TARGET){
+  const cols = COLS.map(c => ({ c, m:getLayoutMeta(c) }));
+  const widths = {};
+  let total = 0;
+  cols.forEach(({c,m}) => { widths[c.k] = m.ideal; total += m.ideal; });
+  if (total > targetPx) {
+    let need = total - targetPx;
+    const shrinkables = cols.filter(x => !x.m.fixed && x.m.ideal > x.m.min);
+    while (need > 0.1 && shrinkables.length) {
+      const totalRoom = shrinkables.reduce((s,x) => s + Math.max(0, widths[x.c.k] - x.m.min), 0);
+      if (!totalRoom) break;
+      shrinkables.forEach(x => {
+        const room = Math.max(0, widths[x.c.k] - x.m.min);
+        if (!room) return;
+        const delta = Math.min(room, need * (room / totalRoom));
+        widths[x.c.k] -= delta;
+      });
+      total = Object.values(widths).reduce((a,b)=>a+b,0);
+      need = Math.max(0, total - targetPx);
+      if (need < 0.5) break;
+    }
+  } else if (total < targetPx) {
+    let extra = targetPx - total;
+    const growables = cols.filter(x => !x.m.fixed && x.m.max > x.m.ideal);
+    while (extra > 0.1 && growables.length) {
+      const totalWeight = growables.reduce((s,x) => s + (x.m.weight || 1), 0);
+      if (!totalWeight) break;
+      let used = 0;
+      growables.forEach(x => {
+        const headroom = Math.max(0, x.m.max - widths[x.c.k]);
+        if (!headroom) return;
+        const delta = Math.min(headroom, extra * ((x.m.weight || 1) / totalWeight));
+        widths[x.c.k] += delta; used += delta;
+      });
+      extra -= used;
+      if (used < 0.5) break;
+    }
+  }
+  Object.keys(widths).forEach(k => widths[k] = Math.round(widths[k]));
+  return widths;
+}
+function getPrintPercentMap(){
+  const map = {};
+  const cols = COLS.filter(c => !c.noPrint);
+  const raw = cols.map(c => ({ k:c.k, pct:(getLayoutMeta(c).printPct || 4) }));
+  const total = raw.reduce((s,x)=>s+x.pct,0) || 100;
+  raw.forEach(x => map[x.k] = +(x.pct * 100 / total).toFixed(2));
+  return map;
+}
+function applyAutoColumnLayout(){
+  const widths = calculateColWidths(AUTO_LAYOUT_TARGET);
+  ALL_TABS.forEach(tab => {
+    const tbl = document.getElementById('tbl-' + tab);
+    if (!tbl) return;
+    tbl.querySelectorAll('colgroup col').forEach(col => {
+      const k = col.dataset.k;
+      if (widths[k]) col.style.width = widths[k] + 'px';
+    });
+  });
+}
+function debounce(fn, wait=120){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,args), wait); }; }
+
+const FIELD_MAP = {
+  parcel:'parcel_cod', docno:'doc_no', scale:'scale',
+  landno:'land_no',    survey:'survey_page',
+  rai:'rai', ngan:'ngan', wa:'wa', subwa:'subwa', coown:'co_owner',
+  idcard:'id_card', title:'title', fname:'fname', lname:'lname',
+  addr:'address', moo:'moo', soi:'soi', village:'village', road:'road',
+  tambol:'tambol', amphur:'amphur', prov:'province', tel:'tel',
+  change:'change_detail', date:'change_date',
+};
+
+const state = {
+  tab : 'chanote',
+  data: { chanote:[], ns3a:[], ns3:[] },
+  page: { chanote:0,  ns3a:0,  ns3:0  },
+};
+
+function buildTables() {
+  ALL_TABS.forEach(tab => {
+    const tbl = document.getElementById('tbl-' + tab);
+    const th  = document.getElementById('th-'  + tab);
+
+    const cg = document.createElement('colgroup');
+    COLS.forEach(c => {
+      const col = document.createElement('col');
+      col.dataset.k  = c.k;
+      col.style.width = c.sw + 'px';
+      if (c.noPrint) col.className = 'no-print';
+      cg.appendChild(col);
+    });
+    tbl.insertBefore(cg, tbl.firstChild);
+
+    /* Repeating print-header rows: live inside <thead> so browsers reprint
+       them on every page of the printout, not just the first. */
+    const mkHeadRow = (cls, id) => {
+      const tr = document.createElement('tr');
+      tr.className = 'print-header-row ' + cls;
+      const td = document.createElement('td');
+      td.colSpan = COLS.length;
+      td.id = id;
+      tr.appendChild(td);
+      th.appendChild(tr);
+      return td;
+    };
+    mkHeadRow('ph-title', 'ph-title-' + tab).textContent =
+      'รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10 แห่งพระราชบัญญัติภาษีที่ดินและสิ่งปลูกสร้าง พ.ศ.2562';
+    mkHeadRow('ph-sub', 'ph-org-'   + tab);
+    mkHeadRow('ph-sub', 'ph-loc-'   + tab);
+    mkHeadRow('ph-sub', 'ph-month-' + tab);
+
+    const tr = document.createElement('tr');
+    COLS.forEach(c => {
+      const td = document.createElement('th');
+      td.innerHTML = c.label;
+      if (c.noWrapHead) td.classList.add('no-wrap');
+      if (c.noPrint)    td.classList.add('no-print');
+      if (c.cls)        td.classList.add(c.cls);
+      td.style.textAlign = 'center';
+      tr.appendChild(td);
+    });
+    th.appendChild(tr);
+  });
+  applyAutoColumnLayout();
+}
+
+function buildRowEl(absIdx, rowData, tab) {
+  const tr = document.createElement('tr');
+  tr.dataset.rowIdx = absIdx;
+
+  const tdSeq = document.createElement('td');
+  tdSeq.style.cssText = 'text-align:center;color:var(--c-muted);font-size:11px;padding:var(--cell-py) var(--cell-px)';
+  tdSeq.textContent = absIdx + 1;
+  tr.appendChild(tdSeq);
+
+  DATA_COLS.forEach(c => {
+    const fieldName = FIELD_MAP[c.k] || c.k;
+    const rawVal = (rowData && rowData[fieldName] !== undefined && rowData[fieldName] !== null)
+                    ? String(rowData[fieldName]) : '';
+      const val = rawVal;
+    const td = document.createElement('td');
+    if (c.noWrapCell) td.classList.add('no-wrap-cell');
+    if (c.wrapCell)   td.classList.add('wrap-cell');
+    if (c.cls)        td.classList.add(c.cls);
+
+    const inp = c.wrapCell ? document.createElement('textarea') : document.createElement('input');
+    if (!c.wrapCell) inp.type = 'text';
+    else { inp.rows = 2; inp.wrap = 'soft'; }
+    inp.value = val;
+    inp.title = val;
+    inp.dataset.field = fieldName;
+    inp.style.textAlign = c.align || 'left';
+    td.appendChild(inp);
+    tr.appendChild(td);
+  });
+
+  const tdDel = document.createElement('td');
+  tdDel.className = 'no-print';
+  tdDel.style.cssText = 'text-align:center;padding:2px;vertical-align:middle';
+  tdDel.innerHTML = `<button onclick="deleteRow(this)" title="ลบแถว" style="color:#cbd5e1;background:none;border:none;cursor:pointer;padding:2px;line-height:0;transition:color .15s" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='#cbd5e1'"><svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`;
+  tr.appendChild(tdDel);
+
+  return tr;
+}
+
+function renderPage(tab) {
+  const pg    = state.page[tab];
+  const data  = state.data[tab];
+  const start = pg * PAGE_SIZE;
+  const end   = Math.min(start + PAGE_SIZE, data.length);
+  const tbody = document.getElementById('tb-' + tab);
+
+  const frag = document.createDocumentFragment();
+  for (let i = start; i < end; i++) {
+    frag.appendChild(buildRowEl(i, data[i], tab));
+  }
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
+  updatePager(tab);
+}
+
+function updatePager(tab) {
+  const data  = state.data[tab];
+  const total = data.length;
+  const pg    = state.page[tab];
+  const maxPg = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+  const start = pg * PAGE_SIZE + 1;
+  const end   = Math.min((pg + 1) * PAGE_SIZE, total);
+
+  const container = document.getElementById('pg-' + tab);
+  if (total === 0) { container.innerHTML = '<span>ยังไม่มีข้อมูล</span>'; return; }
+
+  let html = `<span>แสดง <strong>${start}–${end}</strong> จาก <strong>${total}</strong> รายการ</span>`;
+  html += `<div class="pager">`;
+  html += `<button onclick="goPage('${tab}',0)" ${pg===0?'disabled':''} title="หน้าแรก">«</button>`;
+  html += `<button onclick="goPage('${tab}',${pg-1})" ${pg===0?'disabled':''}>‹ ก่อนหน้า</button>`;
+
+  const totalPages = maxPg + 1;
+  let pStart = Math.max(0, pg - 3), pEnd = Math.min(totalPages - 1, pg + 3);
+  if (pEnd - pStart < 6) { pStart = Math.max(0, pEnd - 6); pEnd = Math.min(totalPages - 1, pStart + 6); }
+  for (let i = pStart; i <= pEnd; i++) {
+    html += `<button onclick="goPage('${tab}',${i})" class="${i===pg?'active':''}">${i+1}</button>`;
+  }
+
+  html += `<button onclick="goPage('${tab}',${pg+1})" ${pg===maxPg?'disabled':''}>ถัดไป ›</button>`;
+  html += `<button onclick="goPage('${tab}',${maxPg})" ${pg===maxPg?'disabled':''} title="หน้าสุดท้าย">»</button>`;
+  html += `</div>`;
+
+  container.innerHTML = html;
+
+  document.getElementById('pc-' + tab).textContent = `จำนวนทั้งสิ้น ${total} รายการ`;
+}
+
+function goPage(tab, pg) {
+  const maxPg = Math.max(0, Math.ceil(state.data[tab].length / PAGE_SIZE) - 1);
+  state.page[tab] = Math.max(0, Math.min(pg, maxPg));
+  renderPage(tab);
+}
+
+function addRowUI() {
+  const tab = state.tab;
+  state.data[tab].push({});
+  state.page[tab] = Math.max(0, Math.ceil(state.data[tab].length / PAGE_SIZE) - 1);
+  renderPage(tab);
+  setTimeout(() => {
+    const tbody = document.getElementById('tb-' + tab);
+    const lastRow = tbody.lastElementChild;
+    if (lastRow) {
+      const inp = lastRow.querySelectorAll('input')[0];
+      if (inp) inp.focus();
+    }
+  }, 50);
+}
+
+function addDataRow(tab, rowData) {
+  state.data[tab].push(rowData || {});
+}
+
+function deleteRow(btn) {
+  if (!confirm('ต้องการลบแถวนี้หรือไม่?')) return;
+  const tr  = btn.closest('tr');
+  const idx = parseInt(tr.dataset.rowIdx);
+  const tab = btn.closest('tbody').dataset.tbody;
+  state.data[tab].splice(idx, 1);
+  renderPage(tab);
+  autoSave();
+}
+
+function renumberVisible(tab) {
+  const pg    = state.page[tab];
+  const tbody = document.getElementById('tb-' + tab);
+  Array.from(tbody.children).forEach((tr, i) => {
+    tr.dataset.rowIdx = pg * PAGE_SIZE + i;
+    tr.children[0].textContent = pg * PAGE_SIZE + i + 1;
+  });
+}
+
+ALL_TABS.forEach(tab => {
+  document.getElementById('tb-' + tab).addEventListener('input', e => {
+    const inp = e.target;
+    if (!['INPUT','TEXTAREA'].includes(inp.tagName) || !inp.dataset.field) return;
+    const tr  = inp.closest('tr');
+    const idx = parseInt(tr.dataset.rowIdx);
+    if (isNaN(idx)) return;
+    state.data[tab][idx][inp.dataset.field] = inp.value;
+    inp.title = inp.value;
+    autoSave();
+  });
+});
+
+let _saveTimer = null;
+function autoSave() { clearTimeout(_saveTimer); _saveTimer = setTimeout(() => saveData(false), 1500); }
+
+function saveData(showToast = false) {
+  const payload = {
+    orgname    : document.getElementById('orgname').value,
+    tambol     : document.getElementById('tambol').value,
+    amphur     : document.getElementById('amphur').value,
+    province   : document.getElementById('province').value,
+    reportMonth: document.getElementById('reportMonth').value,
+    chanote    : state.data.chanote,
+    ns3a       : state.data.ns3a,
+    ns3        : state.data.ns3,
+  };
+  try {
+    localStorage.setItem('m10_v3', JSON.stringify(payload));
+    if (showToast) toast('บันทึกสำเร็จ ✓', '#16a34a');
+  } catch(e) {
+    toast('บันทึกไม่สำเร็จ: พื้นที่เต็ม', '#dc2626');
+  }
+}
+
+function loadData() {
+  const raw = localStorage.getItem('m10_v3');
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    document.getElementById('orgname').value     = d.orgname     || '';
+    document.getElementById('tambol').value      = d.tambol      || '';
+    document.getElementById('amphur').value      = d.amphur      || '';
+    document.getElementById('province').value    = d.province    || '';
+    document.getElementById('reportMonth').value = d.reportMonth || '';
+    ALL_TABS.forEach(tab => {
+      state.data[tab] = Array.isArray(d[tab]) ? d[tab] : [];
+    });
+  } catch(e) { /* ignore corrupt data */ }
+}
+
+function switchTab(tab, evt) {
+  state.tab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  updatePrintHeader();
+}
+
+function updatePrintHeader() {
+  const org  = document.getElementById('orgname').value;
+  const tam  = document.getElementById('tambol').value;
+  const amp  = document.getElementById('amphur').value;
+  const prov = document.getElementById('province').value;
+
+  const locParts = [];
+  if (tam)  locParts.push('ตำบล'   + tam);
+  if (amp)  locParts.push('อำเภอ'  + amp);
+  if (prov) locParts.push('จังหวัด'+ prov);
+  const locTxt = locParts.join(' ');
+
+  let monthTxt = '';
+  const mv = document.getElementById('reportMonth').value;
+  if (mv) {
+    const [y,m] = mv.split('-');
+    const TH_MON = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    monthTxt = TH_MON[+m] + ' พ.ศ. ' + (+y + 543);
+  }
+
+  const TYPE_MAP = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  ALL_TABS.forEach(tab => {
+    const eOrg   = document.getElementById('ph-org-'   + tab);
+    const eLoc   = document.getElementById('ph-loc-'   + tab);
+    const eMonth = document.getElementById('ph-month-' + tab);
+    if (eOrg)   eOrg.textContent   = org || '';
+    if (eLoc)   eLoc.textContent   = locTxt;
+    if (eMonth) eMonth.textContent = 'ประจำเดือน' + monthTxt + ' (' + TYPE_MAP[tab] + ')';
+  });
+}
+
+function printDoc() {
+  updatePrintHeader();
+  document.body.classList.add('print-a4');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('print-a4'), 500);
+}
+
+function printCenterYears(){
+  const years=new Set(Object.keys(state.datasets||{}).filter(validYM).map(k=>k.slice(0,4)));
+  const current=(state.currentYM||currentYMFromControls()||new Date().toISOString().slice(0,7)).slice(0,4);
+  if(current) years.add(current);
+  return [...years].sort((a,b)=>b-a);
+}
+
+function monthTotalForYM(ym){
+  const d=state.datasets[ym]||emptyMonthData();
+  return ALL_TABS.reduce((n,t)=>n+(d[t]?.length||0),0);
+}
+
+function openPrintCenter(){
+  saveData(false);
+  document.getElementById('printCenterModal')?.remove();
+  const years=printCenterYears();
+  if(!years.length){ toast('ยังไม่มีปีสำหรับพิมพ์','#dc2626'); return; }
+  const currentYM=state.currentYM||currentYMFromControls();
+  const currentYear=(currentYM||years[0]).slice(0,4);
+  const currentMonth=+(currentYM||`${currentYear}-01`).slice(5,7);
+  const ov=document.createElement('div');
+  ov.id='printCenterModal';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.64);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)';
+  ov.innerHTML=`
+  <div style="background:#f8fafc;border-radius:20px;max-width:900px;width:100%;max-height:92vh;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.35)">
+    <div style="background:linear-gradient(135deg,#334155,#0f172a);padding:18px 22px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px">
+      <div><div style="font-size:17px;font-weight:800">🖨️ ศูนย์พิมพ์เอกสาร ม.10</div><div style="font-size:11px;opacity:.78;margin-top:3px">เลือกพิมพ์ทีละเดือน หรือพิมพ์ทั้งปีในครั้งเดียว</div></div>
+      <button onclick="document.getElementById('printCenterModal').remove()" style="width:36px;height:36px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;border-radius:10px;font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div style="padding:18px 20px;overflow:auto;max-height:70vh">
+      <div style="display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:16px;align-items:end;margin-bottom:16px">
+        <div><label style="display:block;font-size:11px;color:#64748b;margin-bottom:5px;font-weight:700">ปีที่ต้องการพิมพ์</label><select id="printCenterYear" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;font-weight:700">${years.map(y=>`<option value="${y}" ${y===currentYear?'selected':''}>พ.ศ. ${+y+543} (${y})</option>`).join('')}</select></div>
+        <div style="font-size:11px;color:#64748b;background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:9px 12px">พิมพ์ทั้งปีจะเรียง <b>มกราคม → ธันวาคม</b> และข้ามเดือนที่ไม่มีข้อมูลโดยอัตโนมัติ</div>
+      </div>
+      <div id="printCenterMonths" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px"></div>
+      <div style="margin-top:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
+        <div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:7px">เอกสารที่จะพิมพ์ในแต่ละเดือน</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#475569">
+          <span style="padding:4px 9px;border-radius:999px;background:#ecfdf5;border:1px solid #a7f3d0">โฉนด</span>
+          <span style="padding:4px 9px;border-radius:999px;background:#eff6ff;border:1px solid #bfdbfe">น.ส.3ก</span>
+          <span style="padding:4px 9px;border-radius:999px;background:#f5f3ff;border:1px solid #ddd6fe">น.ส.3</span>
+          <span style="padding:4px 9px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa">พิมพ์เฉพาะประเภทที่มีข้อมูล</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #e2e8f0;background:#fff;display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap">
+      <button onclick="document.getElementById('printCenterModal').remove()" style="padding:9px 15px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#475569;font-weight:700;cursor:pointer">ปิด</button>
+      <button id="printSelectedMonthBtn" style="padding:9px 17px;border:0;border-radius:9px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">พิมพ์เดือนที่เลือก</button>
+      <button id="printWholeYearBtn" style="padding:9px 17px;border:0;border-radius:9px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">พิมพ์ทั้งปี</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const ysel=document.getElementById('printCenterYear');
+  const renderMonths=(preferred=currentMonth)=>{
+    const y=ysel.value, box=document.getElementById('printCenterMonths');
+    box.innerHTML='';
+    let firstWithData=0;
+    for(let m=1;m<=12;m++){
+      const ym=`${y}-${String(m).padStart(2,'0')}`;
+      const d=state.datasets[ym]||emptyMonthData();
+      const n=ALL_TABS.reduce((a,t)=>a+(d[t]?.length||0),0);
+      if(n && !firstWithData) firstWithData=m;
+      const breakdown=`โฉนด ${d.chanote?.length||0} • น.ส.3ก ${d.ns3a?.length||0} • น.ส.3 ${d.ns3?.length||0}`;
+      box.innerHTML+=`<label class="print-month-card" data-month="${m}" style="display:block;border:1px solid ${n?'#bfdbfe':'#e2e8f0'};border-radius:11px;background:${n?'linear-gradient(145deg,#eff6ff,#fff)':'#f8fafc'};padding:10px 11px;cursor:${n?'pointer':'default'};opacity:${n?1:.56};position:relative"><input type="radio" name="printMonthChoice" value="${m}" ${m===preferred?'checked':''} ${n?'':'disabled'} style="position:absolute;right:9px;top:9px"><div style="font-size:12px;font-weight:800;color:#0f172a">${MONTH_NAMES_TH[m]}</div><div style="font-size:18px;font-weight:900;color:${n?'#1d4ed8':'#94a3b8'};margin-top:3px">${n.toLocaleString()}</div><div style="font-size:9.5px;color:#64748b;margin-top:2px;line-height:1.4">${breakdown}</div></label>`;
+    }
+    if(!document.querySelector('input[name="printMonthChoice"]:checked')){
+      const fallback=document.querySelector(`input[name="printMonthChoice"][value="${firstWithData||1}"]`);
+      if(fallback) fallback.checked=true;
+    }
+  };
+  ysel.onchange=()=>renderMonths(1);
+  renderMonths(currentMonth);
+  document.getElementById('printSelectedMonthBtn').onclick=()=>{
+    const m=document.querySelector('input[name="printMonthChoice"]:checked')?.value;
+    if(!m){ toast('ปีนี้ยังไม่มีเดือนที่มีข้อมูล','#ca8a04'); return; }
+    printM10Documents([`${ysel.value}-${String(m).padStart(2,'0')}`]);
+  };
+  document.getElementById('printWholeYearBtn').onclick=()=>{
+    const y=ysel.value;
+    const months=[];
+    for(let m=1;m<=12;m++){
+      const ym=`${y}-${String(m).padStart(2,'0')}`;
+      if(monthTotalForYM(ym)>0) months.push(ym);
+    }
+    if(!months.length){ toast('ปีนี้ไม่มีข้อมูลสำหรับพิมพ์','#ca8a04'); return; }
+    printM10Documents(months);
+  };
+}
+
+function escHTML(v){
+  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildM10PrintSection(ym, tab, data, firstSection){
+  const org=escHTML(document.getElementById('orgname').value||'');
+  const tam=escHTML(document.getElementById('tambol').value||'');
+  const amp=escHTML(document.getElementById('amphur').value||'');
+  const prov=escHTML(document.getElementById('province').value||'');
+  const TYPE_MAP={chanote:'โฉนด',ns3a:'น.ส.3ก',ns3:'น.ส.3'};
+  const printCols=COLS.filter(c=>!c.noPrint);
+  const pct=getPrintPercentMap();
+  const cg='<colgroup>'+printCols.map(c=>`<col style="width:${pct[c.k]||3}%">`).join('')+'</colgroup>';
+  const head='<thead><tr>'+printCols.map(c=>`<th>${c.label.replace(/<br>/g,' ')}</th>`).join('')+'</tr></thead>';
+  const rows=data.map((row,i)=>{
+    let t=`<tr><td class="ctr">${i+1}</td>`;
+    DATA_COLS.forEach(c=>{ const f=FIELD_MAP[c.k]||c.k; t+=`<td class="${c.noWrapCell?'nw':''} ${c.align==='center'?'ctr':''}">${escHTML(row[f]||'')}</td>`; });
+    return t+'</tr>';
+  }).join('');
+  const monthLabel=`${MONTH_NAMES_TH[+ym.slice(5,7)]} พ.ศ. ${+ym.slice(0,4)+543}`;
+  return `<section class="print-section ${firstSection?'first':''}"><div class="doc-head"><h1>รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10</h1><div>แห่งพระราชบัญญัติภาษีที่ดินและสิ่งปลูกสร้าง พ.ศ. 2562</div>${org?`<div class="org">${org}</div>`:''}<div>${tam?'ตำบล'+tam:''} ${amp?'อำเภอ'+amp:''} ${prov?'จังหวัด'+prov:''}</div><div><b>ประจำเดือน${monthLabel} (${TYPE_MAP[tab]})</b></div></div><table>${cg}${head}<tbody>${rows}</tbody></table><div class="count">จำนวนทั้งสิ้น ${data.length.toLocaleString()} รายการ</div></section>`;
+}
+
+function printM10Documents(months){
+  const sections=[];
+  months.sort().forEach(ym=>{
+    const d=state.datasets[ym]||emptyMonthData();
+    ALL_TABS.forEach(tab=>{ if(d[tab]?.length) sections.push({ym,tab,data:d[tab]}); });
+  });
+  if(!sections.length){ toast('ไม่มีข้อมูลสำหรับพิมพ์','#dc2626'); return; }
+  const body=sections.map((s,i)=>buildM10PrintSection(s.ym,s.tab,s.data,i===0)).join('');
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>พิมพ์เอกสาร ม.10</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet"><style>
+  @page{size:A4 landscape;margin:7mm 6mm 10mm 6mm}*{box-sizing:border-box;font-family:'Sarabun','TH Sarabun New',sans-serif}body{margin:0;background:#fff;color:#111;font-size:6.2pt;line-height:1.18;-webkit-print-color-adjust:exact;print-color-adjust:exact}.print-section{break-before:page;page-break-before:always}.print-section.first{break-before:auto;page-break-before:auto}.doc-head{text-align:center;margin-bottom:4pt}.doc-head h1{font-size:9.2pt;margin:0 0 1pt;font-weight:700}.doc-head div{font-size:7.2pt;margin:.4pt 0}.doc-head .org{font-weight:700;font-size:7.6pt;margin-top:1.5pt}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:6.1pt}thead{display:table-header-group}th{background:#e9eef6;border:.5pt solid #333;padding:1.6pt .8pt;text-align:center;vertical-align:middle;font-size:5.7pt;line-height:1.15}td{border:.45pt solid #555;padding:1.45pt .75pt;vertical-align:middle;overflow-wrap:anywhere}tr{break-inside:avoid;page-break-inside:avoid}tbody tr:nth-child(even) td{background:#f6f8fc}.ctr{text-align:center}.nw{white-space:nowrap;overflow:hidden}.count{text-align:right;font-size:6.8pt;margin-top:2.5pt;font-weight:600}</style></head><body>${body}</body></html>`;
+  const pw=window.open('','_blank','width=1300,height=900,scrollbars=yes');
+  if(!pw){ toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','#ca8a04'); return; }
+  pw.document.open(); pw.document.write(html); pw.document.close(); pw.focus();
+  setTimeout(()=>pw.print(),700);
+  toast(`เปิดหน้าพิมพ์ ${months.length===1?'1 เดือน':months.length+' เดือน'} • ${sections.length} ชุดเอกสารแล้ว`,'#334155');
+}
+
+function exportPDF() {
+  const tab  = state.tab;
+  const data = state.data[tab];
+  if (!data.length) { toast('ไม่มีข้อมูลในแท็บนี้', '#dc2626'); return; }
+
+  updatePrintHeader();
+  const orgname  = document.getElementById('orgname').value;
+  const tambol   = document.getElementById('tambol').value;
+  const amphur   = document.getElementById('amphur').value;
+  const province = document.getElementById('province').value;
+  const mv       = document.getElementById('reportMonth').value;
+  let monthStr   = '';
+  const TYPE_MAP = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  const TH_MON   = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  if (mv) { const [y,m] = mv.split('-'); monthStr = TH_MON[+m] + ' พ.ศ. ' + (+y+543); }
+
+  const printCols = COLS.filter(c => !c.noPrint);
+  const PCT_MAP = getPrintPercentMap();
+  let cg = '<colgroup>';
+  printCols.forEach(c => { cg += `<col style="width:${PCT_MAP[c.k]||3}%">`; });
+  cg += '</colgroup>';
+
+  let thead = '<thead><tr>';
+  printCols.forEach(c => {
+    const nw = c.noWrapHead ? 'white-space:nowrap' : '';
+    thead += `<th style="${nw}">${c.label.replace('<br>',' ')}</th>`;
+  });
+  thead += '</tr></thead>';
+
+  let rows = '';
+  data.forEach((row, i) => {
+    rows += `<tr class="${(i%2===1)?'ev':''}">`;
+    rows += `<td style="text-align:center">${i+1}</td>`;
+    DATA_COLS.forEach(c => {
+      const f   = FIELD_MAP[c.k] || c.k;
+      const val = (row[f] || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const nw  = c.noWrapCell ? 'white-space:nowrap;overflow:hidden' : '';
+      const ta  = c.align === 'right' ? 'text-align:right' : c.align === 'left' ? 'text-align:left' : 'text-align:center';
+      rows += `<td style="${nw};${ta}">${val}</td>`;
+    });
+    rows += '</tr>';
+  });
+
+  const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page { size:A4 landscape; margin:7mm 6mm 11mm 6mm; }
+*{ font-family:'Sarabun','TH Sarabun New',sans-serif; box-sizing:border-box; }
+body{ font-size:6.3pt; line-height:1.2; margin:0; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+h1{ font-size:9.5pt; text-align:center; margin:0 0 1.5pt; font-weight:700; }
+p{ font-size:7.5pt; text-align:center; margin:0 0 0.5pt; }
+.hdr{ margin-bottom:4pt; }
+table{ width:100%; border-collapse:collapse; table-layout:fixed; font-size:6.3pt; }
+thead{ display:table-header-group; }
+th{ background:#ecf0f5; border:0.5pt solid #333; padding:1.5pt 1pt; font-weight:700;
+    text-align:center; vertical-align:middle; font-size:5.9pt; line-height:1.2; }
+td{ border:0.45pt solid #555; padding:1.5pt 0.8pt; vertical-align:middle; font-size:6.3pt; line-height:1.2; overflow:hidden; }
+tr.ev td{ background:#f4f6fb; }
+tr{ page-break-inside:avoid; break-inside:avoid; }
+.cnt{ text-align:right; font-size:7pt; margin-top:3pt; }
+</style></head><body>
+<div class="hdr">
+<h1>รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10 แห่งพระราชบัญญัติภาษีที่ดินและสิ่งปลูกสร้าง พ.ศ.2562</h1>
+${orgname?`<p>${orgname}</p>`:''}
+<p>${tambol?'ตำบล'+tambol:''} ${amphur?'อำเภอ'+amphur:''} ${province?'จังหวัด'+province:''}</p>
+<p>ประจำเดือน${monthStr} (${TYPE_MAP[tab]})</p>
+</div>
+<table>${cg}${thead}<tbody>${rows}</tbody></table>
+<div class="cnt">จำนวนทั้งสิ้น ${data.length} รายการ</div>
+</body></html>`;
+
+  const pw = window.open('','_blank','width=1200,height=800,scrollbars=yes');
+  if (!pw) { toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','#ca8a04'); return; }
+  pw.document.open();
+  pw.document.write(html);
+  pw.document.close();
+  pw.focus();
+  setTimeout(() => { pw.print(); }, 600);
+  toast('เปิดหน้าต่างพิมพ์ PDF แล้ว — เลือก "Save as PDF" ใน Chrome/Edge', '#0284c7');
+}
+
+function triggerCSV() { document.getElementById('csvFile').click(); }
+
+function detectCSVFormat(text) {
+  const first = text.replace(/^\uFEFF/,'').split('\n')[0];
+  if (first.includes('|')) return 'pipe';
+  if (first.toLowerCase().includes('parcel_no') && first.includes(',')) return 'comma_parcel';
+  if (first.includes(',')) return 'comma_generic';
+  return 'unknown';
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let field = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"') {
+        if (line[i+1] === '"') { field += '"'; i++; }
+        else inQ = false;
+      } else field += c;
+    } else {
+      if      (c === '"')  inQ = true;
+      else if (c === ',') { result.push(field.trim()); field = ''; }
+      else field += c;
+    }
+  }
+  result.push(field.trim());
+  return result;
+}
+
+function handleCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    const fmt  = detectCSVFormat(text);
+    if      (fmt === 'pipe')          parsePipeCSV(text);
+    else if (fmt === 'comma_parcel')  previewCommaParcelCSV(text, file.name);
+    else if (fmt === 'comma_generic') { toast('CSV รูปแบบนี้ยังไม่รองรับ','#ca8a04'); }
+    else { alert('ไม่รู้จักรูปแบบ CSV — กรุณาตรวจสอบไฟล์'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+}
+
+function previewCommaParcelCSV(text, filename) {
+  text = text.replace(/^\uFEFF/,'');
+  const rawLines = text.split(/\r?\n/).filter(l => l.trim());
+  if (rawLines.length < 2) { alert('ไฟล์ไม่มีข้อมูล'); return; }
+
+  const headers = splitCSVLine(rawLines[0]).map(h => h.toLowerCase().trim());
+
+  function gc(vals, col) {
+    const i = headers.indexOf(col.toLowerCase());
+    return (i >= 0 && i < vals.length) ? vals[i].replace(/^"|"$/g,'').trim() : '';
+  }
+
+  const meta = {
+    filename, total: 0,
+    types: {}, provinces: new Set(), amphurs: new Set(), tambols: new Set(),
+    dateMin: '', dateMax: '', regCodes: {},
+  };
+  const parsedRows = [];
+
+  for (let i = 1; i < rawLines.length; i++) {
+    if (!rawLines[i].trim()) continue;
+    const v = splitCSVLine(rawLines[i]);
+
+    const landName = gc(v,'LAND_NAME');
+    let csvType = 'chanote';
+    if (landName.includes('น.ส. 3 ก') || landName.includes('น.ส.3ก') || landName.includes('3ก')) csvType = 'ns3a';
+    else if ((landName.includes('น.ส.') || landName.includes('น.ส. 3')) && !landName.includes('ก')) csvType = 'ns3';
+
+    meta.types[csvType]     = (meta.types[csvType] || 0) + 1;
+    meta.total++;
+
+    const prov = gc(v,'province'), amp = gc(v,'amphur'), tam = gc(v,'tambol');
+    if (prov) meta.provinces.add(prov);
+    if (amp)  meta.amphurs.add(amp);
+    if (tam)  meta.tambols.add(tam);
+
+    const rd = gc(v,'reg_date');
+    if (rd) {
+      if (!meta.dateMin || rd < meta.dateMin) meta.dateMin = rd;
+      if (!meta.dateMax || rd > meta.dateMax) meta.dateMax = rd;
+    }
+    const rc = gc(v,'reg_code');
+    if (rc) meta.regCodes[rc] = (meta.regCodes[rc]||0)+1;
+
+    parsedRows.push({ csvType, row: mapCommaParcelRow(v, gc, csvType) });
+  }
+
+  const topCodes = Object.entries(meta.regCodes).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const TYPE_LABEL = { chanote:'โฉนดที่ดิน', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  const typeBreakdown = Object.entries(meta.types).map(([t,n])=>`${TYPE_LABEL[t]}: ${n} รายการ`).join(', ');
+
+  showImportModal({
+    filename,
+    total: meta.total,
+    typeBreakdown,
+    provinces: [...meta.provinces].join(', '),
+    amphurs  : [...meta.amphurs].join(', '),
+    tambols  : [...meta.tambols].join(', '),
+    dateMin  : fmtDate(meta.dateMin),
+    dateMax  : fmtDate(meta.dateMax),
+    topCodes,
+    parsedRows,
+    gcFn: gc,
+    headers,
+  });
+}
+
+function san(v) {
+  if (v === null || v === undefined) return '-';
+  const s = String(v).trim();
+  if (s === '' || s.toUpperCase() === 'NULL' || s === 'undefined' || s === 'NaN') return '-';
+  return s;
+}
+
+/* ── Map คอลัมน์ comma format → state.data ────────────────────
+   CSV Field Reference (87 cols, m10csv_parcel format):
+   ┌─────────────────────────┬──────────────────────────────┐
+   │ ม.10 Field              │ CSV Column                   │
+   ├─────────────────────────┼──────────────────────────────┤
+   │ parcel_cod (รหัสแปลง)  │ parcel_cod                   │
+   │ doc_no (เลขที่เอกสาร)  │ parcel_no  e.g. "6386"       │
+   │ scale  (มาตราส่วน)     │ utm_scale  e.g. "1000"       │
+   │ land_no (เลขที่ดิน)    │ land_no    e.g. "38"         │
+   │ survey_page (หน้าสำรวจ)│ survey_no  e.g. "1733"       │
+   │ rai / ngan / wa / subwa │ rai/ngan/wa/subwa            │
+   │ co_owner (ผู้ถือร่วม)  │ line_no    e.g. "1"          │
+   │ id_card  (เลขบัตร)     │ pers_id    e.g. "3411600..." │
+   │ title/fname/lname       │ title/fname/lname            │
+   │ address (บ้านเลขที่)   │ own_no     e.g. "147/4"      │
+   │ moo/soi/village/road    │ own_moo/own_soi/...          │
+   │ tambol/amphur/province  │ own_tambol/own_amphur/...    │
+   │ tel                     │ own_tel                      │
+   │ change_detail           │ reg_code                     │
+   │ change_date             │ reg_date → แปลงเป็น พ.ศ.    │
+   │ reg_amt (จำนวนเงิน)     │ reg_amt (ถ้ามีในไฟล์)        │
+   └─────────────────────────┴──────────────────────────────┘
+   ────────────────────────────────────────────────────────── */
+function mapCommaParcelRow(vals, gc, csvType) {
+  const row = {};
+
+  /* ① รหัสแปลงที่ดิน ← parcel_cod (ถ้าไม่มีให้แสดง "-") */
+  row.parcel_cod = san(gc(vals, 'parcel_cod')) || '-';
+
+  /* ② เลขที่เอกสารสิทธิ์ ← parcel_no */
+  row.doc_no = san(gc(vals, 'parcel_no'));
+
+  /* ③ มาตราส่วน ← utm_scale */
+  row.scale = san(gc(vals, 'utm_scale'));
+
+  /* ④ เลขที่ดิน ← land_no */
+  row.land_no = san(gc(vals, 'land_no'));
+
+  /* ⑤ หน้าสำรวจ ← survey_no */
+  row.survey_page = san(gc(vals, 'survey_no'));
+
+  /* ⑥ เนื้อที่ */
+  row.rai = san(gc(vals, 'rai'));
+  row.ngan = san(gc(vals, 'ngan'));
+  row.wa = san(gc(vals, 'wa'));
+  row.subwa = san(gc(vals, 'subwa'));
+
+  /* ⑦ ผู้ถือกรรมสิทธิ์ */
+  row.co_owner = san(gc(vals, 'line_no'));
+  row.id_card = san(gc(vals, 'pers_id'));
+  row.title = san(gc(vals, 'title'));
+  row.fname = san(gc(vals, 'fname'));
+  row.lname = san(gc(vals, 'lname'));
+
+  /* ⑧ ที่อยู่เจ้าของ */
+  row.address = san(gc(vals, 'own_no'));
+  row.moo = san(gc(vals, 'own_moo'));
+  row.soi = san(gc(vals, 'own_soi'));
+  row.village = san(gc(vals, 'own_village'));
+  row.road = san(gc(vals, 'own_road'));
+  row.tambol = san(gc(vals, 'own_tambol'));
+  row.amphur = san(gc(vals, 'own_amphur'));
+  row.province = san(gc(vals, 'own_province'));
+  row.tel = san(gc(vals, 'own_tel'));
+
+  /* ⑨ รายการเปลี่ยนแปลง */
+  row.change_detail = san(gc(vals, 'reg_code'));
+  row.change_date = fmtDate(san(gc(vals, 'reg_date')));
+
+  /* ⑩ จำนวนเงินตามนิติกรรม (ถ้ามีในไฟล์) */
+  row.reg_amt = (gc(vals, 'reg_amt') || '');
+
+  return row;
+}
+
+function showImportModal(meta) {
+  document.getElementById('importModal')?.remove();
+
+  const topCodesHTML = meta.topCodes.map(([k,v])=>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border-radius:6px;padding:2px 8px;font-size:11px;margin:2px 2px">
+       <span style="color:#4f46e5;font-weight:600">${v}</span>&nbsp;${k}
+    </span>`).join('');
+
+  const TYPE_CLR = { chanote:'#16a34a', ns3a:'#2563eb', ns3:'#7c3aed' };
+  const typeHTML = meta.parsedRows.reduce((acc, {csvType}) => {
+    acc[csvType] = (acc[csvType]||0)+1; return acc;
+  }, {});
+  const typeBadges = Object.entries(typeHTML).map(([t,n])=>
+    `<span style="background:${TYPE_CLR[t]};color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600">${{chanote:'โฉนด',ns3a:'น.ส.3ก',ns3:'น.ส.3'}[t]} ${n} ราย</span>`
+  ).join(' ');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'importModal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)';
+
+  overlay.innerHTML = `
+  <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden;animation:toastIn .3s cubic-bezier(.22,1,.36,1)">
+    <div style="background:linear-gradient(135deg,#312e81,#4f46e5);padding:18px 22px 16px;color:#fff">
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px">🔍 ตรวจสอบข้อมูลก่อนนำเข้า</div>
+      <div style="font-size:11px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${meta.filename}">📄 ${meta.filename}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #f1f5f9">
+      <div style="padding:12px 18px;border-right:1px solid #f1f5f9">
+        <div style="font-size:11px;color:#64748b;margin-bottom:2px">จำนวนรายการ</div>
+        <div style="font-size:22px;font-weight:700;color:#1e293b">${meta.total.toLocaleString()}</div>
+        <div style="font-size:11px;color:#94a3b8">รายการ</div>
+      </div>
+      <div style="padding:12px 18px">
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px">ประเภทที่ดิน</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${typeBadges}</div>
+      </div>
+    </div>
+
+    <div style="padding:14px 18px;border-bottom:1px solid #f1f5f9;font-size:12.5px">
+      ${[
+        ['📍 จังหวัด', meta.provinces],
+        ['🏘️ อำเภอ',  meta.amphurs ],
+        ['🗺️ ตำบล',   meta.tambols ],
+        ['📅 วันที่นิติกรรม', `${meta.dateMin} – ${meta.dateMax}`],
+      ].map(([label,val])=>`
+        <div style="display:flex;gap:8px;padding:3px 0;align-items:baseline">
+          <span style="color:#64748b;min-width:130px;flex-shrink:0">${label}</span>
+          <span style="color:#1e293b;font-weight:500">${val||'–'}</span>
+        </div>`).join('')}
+    </div>
+
+    <div style="padding:12px 18px;border-bottom:1px solid #f1f5f9">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px">รายการนิติกรรมที่พบบ่อย</div>
+      <div>${topCodesHTML}</div>
+    </div>
+
+    <div id="importWarnBox" style="padding:10px 18px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:12px;color:#92400e;display:none">
+      ⚠️ มีข้อมูลในแท็บอยู่แล้ว — ระบบจะ<strong>เพิ่มต่อท้าย</strong>ข้อมูลเดิม ไม่ลบทิ้ง
+    </div>
+
+    <div style="padding:14px 18px;display:flex;gap:10px;justify-content:flex-end;align-items:center">
+      <span id="importTabInfo" style="font-size:12px;color:#64748b;flex:1"></span>
+      <button onclick="document.getElementById('importModal').remove()"
+        style="padding:8px 18px;border-radius:9px;border:1px solid #d1d5db;background:#fff;color:#475569;font-size:13px;cursor:pointer;font-weight:500">
+        ยกเลิก
+      </button>
+      <button id="importConfirmBtn"
+        style="padding:8px 20px;border-radius:9px;border:none;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-size:13px;cursor:pointer;font-weight:600;box-shadow:0 2px 8px rgba(79,70,229,.35)">
+        ✓ นำเข้าทั้งหมด
+      </button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+
+  const csvType = (meta.parsedRows[0]?.csvType) || 'chanote';
+  const TYPE_N  = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  const existing = state.data[csvType]?.length || 0;
+  const warnBox  = document.getElementById('importWarnBox');
+  const tabInfo  = document.getElementById('importTabInfo');
+  if (existing > 0) { warnBox.style.display='block'; }
+  tabInfo.textContent = `จะนำเข้าไปที่แท็บ: ${TYPE_N[csvType]}`;
+
+  document.getElementById('importConfirmBtn').addEventListener('click', () => {
+    overlay.remove();
+    commitCommaParcelImport(meta.parsedRows);
+  });
+
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+}
+
+function commitCommaParcelImport(parsedRows) {
+  const counts = {};
+  for (const {csvType, row} of parsedRows) {
+    state.data[csvType].push(row);
+    counts[csvType] = (counts[csvType]||0)+1;
+  }
+
+  const fr = parsedRows[0]?.row;
+  if (fr) {
+    if (fr.province && !document.getElementById('province').value) document.getElementById('province').value = fr.province;
+    if (fr.amphur   && !document.getElementById('amphur').value)   document.getElementById('amphur').value   = fr.amphur;
+    if (fr.tambol   && !document.getElementById('tambol').value)   document.getElementById('tambol').value   = fr.tambol;
+  }
+
+  const firstType = parsedRows[0]?.csvType || 'chanote';
+  state.tab = firstType;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[onclick*="${firstType}"]`);
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-' + firstType).classList.add('active');
+
+  const TYPE_N = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  ALL_TABS.forEach(tab => {
+    if (counts[tab]) { state.page[tab] = Math.max(0, Math.ceil(state.data[tab].length/PAGE_SIZE)-1); renderPage(tab); }
+  });
+
+  updatePrintHeader();
+  saveData(false);
+
+  const summary = Object.entries(counts).map(([t,n])=>`${TYPE_N[t]} ${n} ราย`).join(', ');
+  toast(`✓ นำเข้าสำเร็จ — ${summary}`, '#16a34a');
+}
+
+function parsePipeCSV(text) {
+  text = text.replace(/^\uFEFF/,'');
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) { alert('ไฟล์ CSV ไม่มีข้อมูล'); return; }
+
+  const headers = lines[0].split('|').map(h => h.trim());
+  let csvType = null;
+  if (headers.includes('PARCEL_NO') && headers.includes('SURVEY_NO')) csvType = 'chanote';
+  else if (headers.includes('NS3A_NO')) csvType = 'ns3a';
+  else if (headers.includes('NS3_NO'))  csvType = 'ns3';
+  else { alert('ระบุประเภทไม่ได้ — ต้องมี PARCEL_NO, NS3A_NO หรือ NS3_NO'); return; }
+
+  function gc(vals, name) { const i = headers.indexOf(name); return (i>=0 && i<vals.length) ? (vals[i]||'').trim() : ''; }
+
+  const fr = lines[1].split('|');
+  const prov = gc(fr,'PROVINCE'), amp = gc(fr,'AMPHUR'), tam = gc(fr,'TAMBOL');
+  if (prov && !document.getElementById('province').value) document.getElementById('province').value = prov;
+  if (amp  && !document.getElementById('amphur').value)   document.getElementById('amphur').value   = amp;
+  if (tam  && !document.getElementById('tambol').value)   document.getElementById('tambol').value   = tam;
+
+  if (csvType !== state.tab) {
+    state.tab = csvType;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const btn = document.querySelector(`.tab-btn[onclick*="${csvType}"]`);
+    if (btn) btn.classList.add('active');
+    document.getElementById('tab-' + csvType).classList.add('active');
+  }
+
+  let count = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const v = lines[i].split('|');
+    const row = {};
+    if (csvType==='chanote') { row.parcel_cod='-'; row.doc_no=gc(v,'PARCEL_NO'); row.scale=gc(v,'UTM_SCALE'); row.land_no=gc(v,'LAND_NO'); row.survey_page=gc(v,'SURVEY_NO'); }
+    else if (csvType==='ns3a') { row.parcel_cod='-'; row.doc_no=gc(v,'NS3A_NO'); row.scale=gc(v,'UTM_SCALE'); row.land_no=gc(v,'LAND_NO'); row.survey_page=gc(v,'AIRMAPNAME')||'อำเภอ'+gc(v,'AMPHUR'); }
+    else { row.parcel_cod='-'; row.doc_no=gc(v,'NS3_NO'); row.scale=''; row.land_no=''; row.survey_page=''; }
+    row.rai=gc(v,'RAI'); row.ngan=gc(v,'NGAN'); row.wa=gc(v,'WA'); row.subwa=gc(v,'SUBWA');
+    row.co_owner=gc(v,'OWN_LINE_NO'); row.id_card=gc(v,'OWN_PERS_ID'); row.title=gc(v,'OWN_TITLE');
+    row.fname=gc(v,'OWN_FNAME'); row.lname=gc(v,'OWN_LNAME'); row.address=gc(v,'OWN_HSE_NO');
+    row.moo=gc(v,'OWN_MOO'); row.soi=gc(v,'OWN_SOI'); row.village=gc(v,'OWN_VILLAGE');
+    row.road=gc(v,'OWN_ROAD'); row.tambol=gc(v,'OWN_TAMBOL'); row.amphur=gc(v,'OWN_AMPHUR');
+    row.province=gc(v,'OWN_PROVINCE'); row.tel=gc(v,'OWN_TEL');
+    row.change_detail=gc(v,'REG_CODE');
+    row.change_date=fmtDate(gc(v,'REG_DATE'));
+    row.reg_amt=gc(v,'REG_AMT');
+    state.data[csvType].push(row); count++;
+  }
+  state.page[csvType] = 0;
+  renderPage(csvType);
+  updatePrintHeader();
+  saveData(false);
+  const TYPE_N = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  toast(`นำเข้า ${TYPE_N[csvType]} สำเร็จ ${count} รายการ`, '#0284c7');
+}
+
+function fmtDate(s) {
+  if (!s || s === 'NULL') return '';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y,m,d]=s.split('-'); return `${d}/${m}/${+y+543}`; }
+  return s;
+}
+
+function exportCurrentXLSX() { exportTabXLSX(state.tab); }
+
+function exportAllXLSX() {
+  ALL_TABS.forEach((t,i) => setTimeout(() => exportTabXLSX(t), i*350));
+  toast('ส่งออก 3 ไฟล์เรียบร้อย','#0d9488');
+}
+
+function exportTabXLSX(tab) {
+  const data = state.data[tab];
+  const TYPE_N = { chanote:'โฉนด', ns3a:'น.ส.3ก', ns3:'น.ส.3' };
+  const typeName = TYPE_N[tab];
+  if (!data.length) { toast(`ไม่มีข้อมูลใน ${typeName}`,'#dc2626'); return; }
+
+  const org=document.getElementById('orgname').value;
+  const tam=document.getElementById('tambol').value||'ตำบล', amp=document.getElementById('amphur').value||'อำเภอ', prov=document.getElementById('province').value||'จังหวัด';
+  const mv=document.getElementById('reportMonth').value;
+  let ms='ประจำเดือน';
+  if(mv){const[y,m]=mv.split('-'); const TH_MON=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']; ms=`ประจำเดือน${TH_MON[+m]} ${+y+543}`;}
+
+  const rows = [
+    ['รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10 แห่งพระราชบัญญัติภาษีที่ดินและสิ่งปลูกสร้าง พ.ศ.2562'],
+    ...(org ? [[org]] : []),
+    [`ตำบล${tam} อำเภอ${amp} จังหวัด${prov}`],
+    [`${ms}(${typeName})`],
+    ['รหัสแปลงที่ดิน','เลขที่เอกสารสิทธิ์','มาตราส่วน','เลขที่ดิน','หน้าสำรวจ','ไร่','งาน','ตารางวา','subwa','ผู้ถือกรรมสิทธิ์ร่วม','เลขบัตรประจำตัว','คำนำหน้า','ชื่อ','สกุล','ที่อยู่','หมู่ที่','ซอย','หมู่บ้าน','ถนน','ตำบล','อำเภอ','จังหวัด','เบอร์โทร','รายการเปลี่ยนแปลง','วันที่ทำนิติกรรม'],
+  ];
+  data.forEach(r => rows.push([r.parcel_cod,r.doc_no,r.scale,r.land_no,r.survey_page,r.rai,r.ngan,r.wa,r.subwa,r.co_owner,r.id_card,r.title,r.fname,r.lname,r.address,r.moo,r.soi,r.village,r.road,r.tambol,r.amphur,r.province,r.tel,r.change_detail,r.change_date]));
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const headerRowCount = org ? 4 : 3;
+  ws['!merges'] = Array.from({length: headerRowCount}, (_, r) => ({s:{r,c:0},e:{r,c:24}}));
+  ws['!cols'] = [{wch:13},{wch:10},{wch:9},{wch:8},{wch:9},{wch:3},{wch:4},{wch:8},{wch:6},{wch:6},{wch:14},{wch:14},{wch:30},{wch:12},{wch:5},{wch:5},{wch:18},{wch:10},{wch:12},{wch:9},{wch:7},{wch:8},{wch:46},{wch:10},{wch:9}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'parcel_data');
+  XLSX.writeFile(wb, `${typeName}_${tam}_${ms.replace('ประจำเดือน','')}.xlsx`);
+}
+
+function clearCurrentTab() {
+  if (!confirm(`ต้องการล้างข้อมูลแท็บ "${state.tab}" หรือไม่?`)) return;
+  state.data[state.tab] = [];
+  state.page[state.tab] = 0;
+  renderPage(state.tab);
+  saveData(false);
+  toast('ล้างข้อมูลเรียบร้อย','#dc2626');
+}
+
+function toast(msg, bg='#16a34a') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.background = bg;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; }, 2800);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// =========================================================
+// M10 v4 — MULTI YEAR / MULTI MONTH DATA STORE
+// =========================================================
+const MONTH_NAMES_TH = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+state.datasets = {};
+state.currentYM = '';
+
+function emptyMonthData(){ return {chanote:[], ns3a:[], ns3:[]}; }
+function validYM(ym){ return /^\d{4}-\d{2}$/.test(ym||''); }
+function currentYMFromControls(){
+  const y = document.getElementById('reportYear')?.value;
+  const m = document.getElementById('reportMonthNum')?.value;
+  return y && m ? `${y}-${m}` : '';
+}
+function updateHiddenReportMonth(){
+  const ym = currentYMFromControls();
+  document.getElementById('reportMonth').value = ym;
+  return ym;
+}
+function initPeriodControls(preferredYM=''){
+  const ySel=document.getElementById('reportYear'), mSel=document.getElementById('reportMonthNum');
+  const now = new Date();
+  const pref = validYM(preferredYM) ? preferredYM : `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const py=+pref.slice(0,4), pm=+pref.slice(5,7);
+  const years = new Set();
+  for(let y=py-10;y<=py+10;y++) years.add(y);
+  Object.keys(state.datasets||{}).forEach(k=>{ if(validYM(k)) years.add(+k.slice(0,4)); });
+  ySel.innerHTML=[...years].sort((a,b)=>b-a).map(y=>`<option value="${y}">พ.ศ. ${y+543} (${y})</option>`).join('');
+  mSel.innerHTML=MONTH_NAMES_TH.slice(1).map((n,i)=>`<option value="${String(i+1).padStart(2,'0')}">${n}</option>`).join('');
+  ySel.value=String(py); mSel.value=String(pm).padStart(2,'0');
+  updateHiddenReportMonth();
+}
+function ensureDataset(ym){
+  if(!validYM(ym)) return emptyMonthData();
+  if(!state.datasets[ym]) state.datasets[ym]=emptyMonthData();
+  ALL_TABS.forEach(t=>{ if(!Array.isArray(state.datasets[ym][t])) state.datasets[ym][t]=[]; });
+  return state.datasets[ym];
+}
+function setActivePeriod(ym, render=true){
+  if(!validYM(ym)) return;
+  state.currentYM=ym;
+  state.data=ensureDataset(ym);
+  state.page={chanote:0,ns3a:0,ns3:0};
+  const ySel=document.getElementById('reportYear'),mSel=document.getElementById('reportMonthNum');
+  if(ySel && ![...ySel.options].some(o=>o.value===ym.slice(0,4))){
+    ySel.add(new Option(`พ.ศ. ${+ym.slice(0,4)+543} (${ym.slice(0,4)})`,ym.slice(0,4)));
+  }
+  if(ySel) ySel.value=ym.slice(0,4); if(mSel) mSel.value=ym.slice(5,7);
+  document.getElementById('reportMonth').value=ym;
+  if(render){ ALL_TABS.forEach(renderPage); updatePrintHeader(); updateMonthSummary(); }
+}
+function updateMonthSummary(){
+  const d=state.data||emptyMonthData();
+  const total=ALL_TABS.reduce((n,t)=>n+(d[t]?.length||0),0);
+  const el=document.getElementById('monthDataSummary');
+  if(el){
+    const ym=state.currentYM||currentYMFromControls();
+    const label=validYM(ym)?`${MONTH_NAMES_TH[+ym.slice(5,7)]} ${+ym.slice(0,4)+543}`:'เดือนนี้';
+    el.textContent=`${label} • ${total.toLocaleString()} รายการ (โฉนด ${d.chanote?.length||0} / น.ส.3ก ${d.ns3a?.length||0} / น.ส.3 ${d.ns3?.length||0})`;
+  }
+}
+function changeActivePeriod(){
+  saveData(false);
+  const ym=updateHiddenReportMonth();
+  setActivePeriod(ym,true);
+  saveData(false);
+}
+
+function saveData(showToast=false){
+  if(state.currentYM) state.datasets[state.currentYM]=state.data;
+  const payload={
+    version:4,
+    orgname:document.getElementById('orgname').value,
+    tambol:document.getElementById('tambol').value,
+    amphur:document.getElementById('amphur').value,
+    province:document.getElementById('province').value,
+    currentYM:state.currentYM||currentYMFromControls(),
+    datasets:state.datasets
+  };
+  try{
+    localStorage.setItem('m10_v4',JSON.stringify(payload));
+    if(showToast) toast('บันทึกสำเร็จ ✓','#16a34a');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: พื้นที่จัดเก็บเต็ม','#dc2626'); }
+  updateMonthSummary();
+}
+
+function loadData(){
+  let d=null;
+  try{ const r=localStorage.getItem('m10_v4'); if(r) d=JSON.parse(r); }catch(e){}
+  if(d && d.version===4){
+    document.getElementById('orgname').value=d.orgname||'';
+    document.getElementById('tambol').value=d.tambol||'';
+    document.getElementById('amphur').value=d.amphur||'';
+    document.getElementById('province').value=d.province||'';
+    state.datasets=(d.datasets && typeof d.datasets==='object')?d.datasets:{};
+    const ym=validYM(d.currentYM)?d.currentYM:new Date().toISOString().slice(0,7);
+    initPeriodControls(ym); setActivePeriod(ym,false); return;
+  }
+  // migrate v3 automatically
+  try{
+    const r=localStorage.getItem('m10_v3');
+    if(r){
+      const old=JSON.parse(r);
+      document.getElementById('orgname').value=old.orgname||'';
+      document.getElementById('tambol').value=old.tambol||'';
+      document.getElementById('amphur').value=old.amphur||'';
+      document.getElementById('province').value=old.province||'';
+      const ym=validYM(old.reportMonth)?old.reportMonth:new Date().toISOString().slice(0,7);
+      state.datasets={}; state.datasets[ym]={chanote:Array.isArray(old.chanote)?old.chanote:[],ns3a:Array.isArray(old.ns3a)?old.ns3a:[],ns3:Array.isArray(old.ns3)?old.ns3:[]};
+      initPeriodControls(ym); setActivePeriod(ym,false); saveData(false); return;
+    }
+  }catch(e){}
+  const ym=new Date().toISOString().slice(0,7); state.datasets={}; initPeriodControls(ym); setActivePeriod(ym,false);
+}
+
+function regDateToYM(v){
+  if(!v) return '';
+  v=String(v).trim();
+  let y,m;
+  let a=v.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if(a){ y=+a[1];m=+a[2]; }
+  else { a=v.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/); if(a){m=+a[2];y=+a[3];} }
+  if(!y||!m||m<1||m>12) return '';
+  if(y>2400) y-=543;
+  if(y<1900||y>2200) return '';
+  return `${y}-${String(m).padStart(2,'0')}`;
+}
+function readFileText(file){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=e=>resolve(e.target.result); r.onerror=reject; r.readAsText(file,'UTF-8'); }); }
+
+function parseCommaParcelToEntries(text, filename=''){
+  text=text.replace(/^\uFEFF/,'');
+  const rawLines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(rawLines.length<2) return [];
+  const headers=splitCSVLine(rawLines[0]).map(h=>h.toLowerCase().trim());
+  function gc(vals,col){ const i=headers.indexOf(col.toLowerCase()); return (i>=0&&i<vals.length)?vals[i].replace(/^"|"$/g,'').trim():''; }
+  const out=[];
+  for(let i=1;i<rawLines.length;i++){
+    const v=splitCSVLine(rawLines[i]);
+    const landName=gc(v,'LAND_NAME'); let csvType='chanote';
+    if(landName.includes('น.ส. 3 ก')||landName.includes('น.ส.3ก')||landName.includes('3ก')) csvType='ns3a';
+    else if((landName.includes('น.ส.')||landName.includes('น.ส. 3'))&&!landName.includes('ก')) csvType='ns3';
+    const rawDate=gc(v,'reg_date');
+    out.push({csvType,row:mapCommaParcelRow(v,gc,csvType),ym:regDateToYM(rawDate),rawDate,filename});
+  }
+  return out;
+}
+function parsePipeToEntries(text, filename=''){
+  text=text.replace(/^\uFEFF/,''); const lines=text.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2)return[];
+  const headers=lines[0].split('|').map(h=>h.trim()); let csvType=null;
+  if(headers.includes('PARCEL_NO')&&headers.includes('SURVEY_NO'))csvType='chanote'; else if(headers.includes('NS3A_NO'))csvType='ns3a'; else if(headers.includes('NS3_NO'))csvType='ns3'; else return[];
+  const gc=(v,n)=>{const i=headers.indexOf(n);return(i>=0&&i<v.length)?(v[i]||'').trim():''}; const out=[];
+  for(let i=1;i<lines.length;i++){
+    const v=lines[i].split('|'),row={};
+    if(csvType==='chanote'){row.parcel_cod='-';row.doc_no=gc(v,'PARCEL_NO');row.scale=gc(v,'UTM_SCALE');row.land_no=gc(v,'LAND_NO');row.survey_page=gc(v,'SURVEY_NO');}
+    else if(csvType==='ns3a'){row.parcel_cod='-';row.doc_no=gc(v,'NS3A_NO');row.scale=gc(v,'UTM_SCALE');row.land_no=gc(v,'LAND_NO');row.survey_page=gc(v,'AIRMAPNAME')||'อำเภอ'+gc(v,'AMPHUR');}
+    else{row.parcel_cod='-';row.doc_no=gc(v,'NS3_NO');row.scale='';row.land_no='';row.survey_page='';}
+    row.rai=gc(v,'RAI');row.ngan=gc(v,'NGAN');row.wa=gc(v,'WA');row.subwa=gc(v,'SUBWA');row.co_owner=gc(v,'OWN_LINE_NO');row.id_card=gc(v,'OWN_PERS_ID');row.title=gc(v,'OWN_TITLE');row.fname=gc(v,'OWN_FNAME');row.lname=gc(v,'OWN_LNAME');row.address=gc(v,'OWN_HSE_NO');row.moo=gc(v,'OWN_MOO');row.soi=gc(v,'OWN_SOI');row.village=gc(v,'OWN_VILLAGE');row.road=gc(v,'OWN_ROAD');row.tambol=gc(v,'OWN_TAMBOL');row.amphur=gc(v,'OWN_AMPHUR');row.province=gc(v,'OWN_PROVINCE');row.tel=gc(v,'OWN_TEL');row.change_detail=gc(v,'REG_CODE'); const rd=gc(v,'REG_DATE');row.change_date=fmtDate(rd);row.reg_amt=gc(v,'REG_AMT');
+    out.push({csvType,row,ym:regDateToYM(rd),rawDate:rd,filename});
+  } return out;
+}
+
+async function handleCSV(e){
+  const files=[...(e.target.files||[])]; e.target.value=''; if(!files.length)return;
+  let entries=[],unsupported=[];
+  for(const file of files){
+    const text=await readFileText(file); const fmt=detectCSVFormat(text);
+    if(fmt==='comma_parcel') entries.push(...parseCommaParcelToEntries(text,file.name));
+    else if(fmt==='pipe') entries.push(...parsePipeToEntries(text,file.name));
+    else unsupported.push(file.name);
+  }
+  if(!entries.length){ toast('ไม่พบข้อมูล CSV ที่รองรับ','#dc2626'); return; }
+  showMultiMonthImportModal(entries,files.length,unsupported);
+}
+function showMultiMonthImportModal(entries,fileCount,unsupported=[]){
+  document.getElementById('importModal')?.remove();
+  const fallback=state.currentYM||currentYMFromControls(); entries.forEach(e=>{if(!e.ym)e.ym=fallback;});
+  const byMonth={}; entries.forEach(e=>{byMonth[e.ym]??={total:0,chanote:0,ns3a:0,ns3:0};byMonth[e.ym].total++;byMonth[e.ym][e.csvType]++;});
+  const months=Object.keys(byMonth).sort();
+  const rows=months.map(ym=>{const x=byMonth[ym];return `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600">${MONTH_NAMES_TH[+ym.slice(5,7)]} ${+ym.slice(0,4)+543}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0">${x.chanote}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0">${x.ns3a}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0">${x.ns3}</td><td style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700">${x.total}</td></tr>`}).join('');
+  const ov=document.createElement('div');ov.id='importModal';ov.style='position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:700px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden"><div style="background:linear-gradient(135deg,#312e81,#4f46e5);padding:18px 22px;color:#fff"><div style="font-size:16px;font-weight:700">📅 นำเข้าหลายเดือน</div><div style="font-size:12px;opacity:.8">${fileCount} ไฟล์ • ${entries.length.toLocaleString()} รายการ • พบ ${months.length} เดือน</div></div><div style="padding:16px 20px;max-height:55vh;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc"><th style="padding:8px;text-align:left">เดือน</th><th>โฉนด</th><th>น.ส.3ก</th><th>น.ส.3</th><th>รวม</th></tr></thead><tbody>${rows}</tbody></table>${unsupported.length?`<div style="margin-top:10px;color:#b45309;font-size:11px">⚠️ ไม่รองรับ: ${unsupported.join(', ')}</div>`:''}<div style="margin-top:10px;color:#64748b;font-size:11px">รายการที่อ่านวันที่ไม่ได้จะถูกนำเข้าเดือนที่กำลังเปิดอยู่ (${fallback})</div></div><div style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #e2e8f0"><button onclick="document.getElementById('importModal').remove()" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff">ยกเลิก</button><button id="multiImportConfirm" style="padding:8px 18px;border:0;border-radius:8px;background:#4f46e5;color:#fff;font-weight:700">✓ นำเข้าทุกเดือน</button></div></div>`;
+  document.body.appendChild(ov); document.getElementById('multiImportConfirm').onclick=()=>{ov.remove();commitMultiMonthEntries(entries);};
+}
+function commitMultiMonthEntries(entries){
+  const counts={}; let firstLoc=null;
+  entries.forEach(e=>{ const d=ensureDataset(e.ym); d[e.csvType].push(e.row); counts[e.ym]=(counts[e.ym]||0)+1; if(!firstLoc)firstLoc=e.row; });
+  if(firstLoc){ if(firstLoc.province&&firstLoc.province!=='-'&&!document.getElementById('province').value)document.getElementById('province').value=firstLoc.province;if(firstLoc.amphur&&firstLoc.amphur!=='-'&&!document.getElementById('amphur').value)document.getElementById('amphur').value=firstLoc.amphur;if(firstLoc.tambol&&firstLoc.tambol!=='-'&&!document.getElementById('tambol').value)document.getElementById('tambol').value=firstLoc.tambol; }
+  const months=Object.keys(counts).sort(); setActivePeriod(months[months.length-1]||state.currentYM,true); saveData(false); initPeriodControls(state.currentYM); setActivePeriod(state.currentYM,true);
+  toast(`✓ นำเข้า ${entries.length.toLocaleString()} รายการ / ${months.length} เดือนสำเร็จ`,'#16a34a');
+}
+
+function exportAllXLSX(){ ALL_TABS.forEach((t,i)=>setTimeout(()=>exportTabXLSX(t),i*350)); toast('ส่งออกข้อมูลเดือนนี้แล้ว','#0d9488'); }
+function openMultiExportModal(){
+  saveData(false); document.getElementById('multiExportModal')?.remove();
+  const years=[...new Set(Object.keys(state.datasets).filter(validYM).map(k=>k.slice(0,4)))].sort((a,b)=>b-a);
+  if(!years.length){toast('ยังไม่มีข้อมูลสำหรับส่งออก','#dc2626');return;}
+  const ov=document.createElement('div');ov.id='multiExportModal';ov.style='position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:650px;width:100%;overflow:hidden"><div style="background:linear-gradient(135deg,#0f766e,#0d9488);padding:18px 22px;color:#fff"><b>📦 Export หลายเดือน</b><div style="font-size:11px;opacity:.8">เลือกปีและเดือนที่ต้องการรวมเป็น Excel เดียว</div></div><div style="padding:18px"><label style="font-size:12px;color:#64748b">ปี</label><select id="multiExportYear" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;margin:5px 0 12px">${years.map(y=>`<option value="${y}">พ.ศ. ${+y+543} (${y})</option>`).join('')}</select><div id="multiExportMonths" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div></div><div style="padding:14px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end"><button onclick="document.getElementById('multiExportModal').remove()" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff">ยกเลิก</button><button id="multiExportGo" style="padding:8px 16px;border:0;border-radius:8px;background:#0d9488;color:white;font-weight:700">Export ที่เลือก</button></div></div>`;
+  document.body.appendChild(ov); const ysel=document.getElementById('multiExportYear');
+  const render=()=>{const y=ysel.value,box=document.getElementById('multiExportMonths');box.innerHTML='';for(let m=1;m<=12;m++){const ym=`${y}-${String(m).padStart(2,'0')}`,d=state.datasets[ym],n=d?ALL_TABS.reduce((a,t)=>a+(d[t]?.length||0),0):0;box.innerHTML+=`<label style="padding:9px;border:1px solid ${n?'#99f6e4':'#e2e8f0'};border-radius:8px;background:${n?'#f0fdfa':'#f8fafc'};font-size:12px;opacity:${n?1:.5}"><input type="checkbox" class="mxm" value="${ym}" ${n?'checked':'disabled'}> ${MONTH_NAMES_TH[m]} <b>${n}</b></label>`;}}; ysel.onchange=render;render();
+  document.getElementById('multiExportGo').onclick=()=>{const sel=[...document.querySelectorAll('.mxm:checked')].map(x=>x.value);if(!sel.length){toast('กรุณาเลือกอย่างน้อย 1 เดือน','#ca8a04');return;}exportSelectedMonthsWorkbook(sel);ov.remove();};
+}
+
+function annualSummaryData(year){
+  const y=String(year||'');
+  const months=[];
+  const totals={chanote:0,ns3a:0,ns3:0,total:0,active:0};
+  for(let m=1;m<=12;m++){
+    const ym=`${y}-${String(m).padStart(2,'0')}`;
+    const d=state.datasets[ym] || emptyMonthData();
+    const row={
+      ym,
+      month:m,
+      chanote:d.chanote?.length||0,
+      ns3a:d.ns3a?.length||0,
+      ns3:d.ns3?.length||0
+    };
+    row.total=row.chanote+row.ns3a+row.ns3;
+    row.hasData=row.total>0;
+    if(row.hasData) totals.active++;
+    totals.chanote+=row.chanote;
+    totals.ns3a+=row.ns3a;
+    totals.ns3+=row.ns3;
+    totals.total+=row.total;
+    months.push(row);
+  }
+  const busiest=months.reduce((best,r)=>r.total>(best?.total||0)?r:best,null);
+  return {year:y,months,totals,busiest};
+}
+
+function annualAvailableYears(){
+  const years=new Set(Object.keys(state.datasets||{}).filter(validYM).map(k=>k.slice(0,4)));
+  const current=(state.currentYM||currentYMFromControls()||new Date().toISOString().slice(0,7)).slice(0,4);
+  if(current) years.add(current);
+  return [...years].sort((a,b)=>b-a);
+}
+
+function openAnnualSummary(preferredYear=''){
+  saveData(false);
+  document.getElementById('annualSummaryModal')?.remove();
+  const years=annualAvailableYears();
+  if(!years.length){ toast('ยังไม่มีปีสำหรับสรุป','#dc2626'); return; }
+  const currentYear=preferredYear && years.includes(String(preferredYear)) ? String(preferredYear) : ((state.currentYM||'').slice(0,4)||years[0]);
+  const ov=document.createElement('div');
+  ov.id='annualSummaryModal';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)';
+  ov.innerHTML=`
+  <div style="background:#f8fafc;border-radius:20px;width:min(1120px,100%);max-height:94vh;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.38);display:flex;flex-direction:column">
+    <div style="background:linear-gradient(135deg,#172554 0%,#1d4ed8 52%,#0f766e 100%);color:#fff;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-.2px">สรุปผลการปรับปรุงข้อมูลประจำปี</div>
+        <div style="font-size:12px;opacity:.82;margin-top:3px">มาตรา 10 • ภาพรวม 12 เดือน • พร้อมพิมพ์ส่งงาน A4</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+        <label style="font-size:12px;opacity:.9">เลือกปี</label>
+        <select id="annualYear" style="padding:8px 12px;border:1px solid rgba(255,255,255,.3);border-radius:9px;background:#fff;color:#0f172a;font-weight:700;min-width:160px">${years.map(y=>`<option value="${y}" ${y===currentYear?'selected':''}>พ.ศ. ${+y+543} (${y})</option>`).join('')}</select>
+        <button onclick="document.getElementById('annualSummaryModal').remove()" style="width:36px;height:36px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:10px;font-size:20px;cursor:pointer">×</button>
+      </div>
+    </div>
+    <div id="annualSummaryBody" style="padding:18px 20px;overflow:auto"></div>
+    <div style="padding:13px 18px;border-top:1px solid #e2e8f0;background:#fff;display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap">
+      <button onclick="document.getElementById('annualSummaryModal').remove()" style="padding:9px 15px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#475569;font-weight:600;cursor:pointer">ปิด</button>
+      <button onclick="exportAnnualSummaryXLSX(document.getElementById('annualYear').value)" style="padding:9px 16px;border:0;border-radius:9px;background:#0f766e;color:#fff;font-weight:700;cursor:pointer">Export Excel สรุป</button>
+      <button onclick="printAnnualSummary(document.getElementById('annualYear').value)" style="padding:9px 16px;border:0;border-radius:9px;background:#1d4ed8;color:#fff;font-weight:700;cursor:pointer">พิมพ์ / บันทึก PDF A4</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const sel=document.getElementById('annualYear');
+  sel.onchange=()=>renderAnnualSummary(sel.value);
+  renderAnnualSummary(currentYear);
+}
+
+function renderAnnualSummary(year){
+  const el=document.getElementById('annualSummaryBody'); if(!el) return;
+  const a=annualSummaryData(year);
+  const org=document.getElementById('orgname').value||'หน่วยงานยังไม่ได้ระบุ';
+  const loc=[document.getElementById('tambol').value&&'ตำบล'+document.getElementById('tambol').value,document.getElementById('amphur').value&&'อำเภอ'+document.getElementById('amphur').value,document.getElementById('province').value&&'จังหวัด'+document.getElementById('province').value].filter(Boolean).join(' ');
+  const busiest=a.busiest&&a.busiest.total?`${MONTH_NAMES_TH[a.busiest.month]} • ${a.busiest.total.toLocaleString()} รายการ`:'ยังไม่มีข้อมูล';
+  const pct=Math.round((a.totals.active/12)*100);
+  const monthRows=a.months.map(r=>`<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#0f172a">${MONTH_NAMES_TH[r.month]}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${r.chanote.toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${r.ns3a.toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">${r.ns3.toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:800;color:${r.total?'#1d4ed8':'#94a3b8'}">${r.total.toLocaleString()}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center"><span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:${r.hasData?'#dcfce7':'#f1f5f9'};color:${r.hasData?'#15803d':'#64748b'}">${r.hasData?'มีข้อมูล':'ไม่มีข้อมูล'}</span></td>
+    </tr>`).join('');
+  el.innerHTML=`
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+      <div><div style="font-size:15px;font-weight:800;color:#0f172a">${org}</div><div style="font-size:12px;color:#64748b;margin-top:2px">${loc||'ยังไม่ได้ระบุพื้นที่'} • ประจำปี พ.ศ. ${+year+543}</div></div>
+      <div style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px">สรุปจากฐานข้อมูลในโปรแกรม ณ ปัจจุบัน</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px">
+      <div style="background:linear-gradient(145deg,#eff6ff,#fff);border:1px solid #bfdbfe;border-radius:14px;padding:14px"><div style="font-size:11px;color:#64748b">รายการรวมทั้งปี</div><div style="font-size:26px;font-weight:900;color:#1d4ed8;margin-top:2px">${a.totals.total.toLocaleString()}</div><div style="font-size:11px;color:#64748b">รายการ</div></div>
+      <div style="background:linear-gradient(145deg,#ecfdf5,#fff);border:1px solid #a7f3d0;border-radius:14px;padding:14px"><div style="font-size:11px;color:#64748b">เดือนที่มีข้อมูล</div><div style="font-size:26px;font-weight:900;color:#047857;margin-top:2px">${a.totals.active}<span style="font-size:14px;color:#64748b">/12</span></div><div style="font-size:11px;color:#64748b">ความครอบคลุม ${pct}%</div></div>
+      <div style="background:linear-gradient(145deg,#fff7ed,#fff);border:1px solid #fed7aa;border-radius:14px;padding:14px"><div style="font-size:11px;color:#64748b">เดือนข้อมูลสูงสุด</div><div style="font-size:16px;font-weight:900;color:#c2410c;margin-top:8px">${busiest}</div><div style="font-size:11px;color:#64748b;margin-top:5px">ใช้ตรวจภาพรวมภาระงาน</div></div>
+      <div style="background:linear-gradient(145deg,#f5f3ff,#fff);border:1px solid #ddd6fe;border-radius:14px;padding:14px"><div style="font-size:11px;color:#64748b">แยกประเภท</div><div style="font-size:12px;font-weight:800;color:#6d28d9;margin-top:7px;line-height:1.7">โฉนด ${a.totals.chanote.toLocaleString()}<br>น.ส.3ก ${a.totals.ns3a.toLocaleString()} • น.ส.3 ${a.totals.ns3.toLocaleString()}</div></div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
+      <div style="padding:12px 15px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="font-size:14px;font-weight:800;color:#0f172a">รายละเอียดรายเดือน</div><div style="font-size:11px;color:#64748b">ตัวเลขนับจากรายการในแต่ละประเภทเอกสารสิทธิ์</div></div>
+      <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:680px"><thead><tr style="background:#f1f5f9;color:#334155"><th style="padding:9px 12px;text-align:left">เดือน</th><th style="padding:9px 12px;text-align:right">โฉนด</th><th style="padding:9px 12px;text-align:right">น.ส.3ก</th><th style="padding:9px 12px;text-align:right">น.ส.3</th><th style="padding:9px 12px;text-align:right">รวม</th><th style="padding:9px 12px;text-align:center">สถานะ</th></tr></thead><tbody>${monthRows}<tr style="background:#eff6ff"><td style="padding:11px 12px;font-weight:900">รวมทั้งปี</td><td style="padding:11px 12px;text-align:right;font-weight:900">${a.totals.chanote.toLocaleString()}</td><td style="padding:11px 12px;text-align:right;font-weight:900">${a.totals.ns3a.toLocaleString()}</td><td style="padding:11px 12px;text-align:right;font-weight:900">${a.totals.ns3.toLocaleString()}</td><td style="padding:11px 12px;text-align:right;font-weight:900;color:#1d4ed8">${a.totals.total.toLocaleString()}</td><td style="padding:11px 12px;text-align:center;font-weight:700">${a.totals.active} เดือน</td></tr></tbody></table></div>
+    </div>`;
+}
+
+function exportAnnualSummaryXLSX(year){
+  const a=annualSummaryData(year);
+  const org=document.getElementById('orgname').value||'';
+  const loc=`ตำบล${document.getElementById('tambol').value||''} อำเภอ${document.getElementById('amphur').value||''} จังหวัด${document.getElementById('province').value||''}`.trim();
+  const rows=[
+    ['สรุปผลการปรับปรุงข้อมูลตามมาตรา 10 ประจำปี'],
+    [org],[loc],[`ประจำปี พ.ศ. ${+year+543}`],[],
+    ['เดือน','โฉนด','น.ส.3ก','น.ส.3','รวม','สถานะ']
+  ];
+  a.months.forEach(r=>rows.push([MONTH_NAMES_TH[r.month],r.chanote,r.ns3a,r.ns3,r.total,r.hasData?'มีข้อมูล':'ไม่มีข้อมูล']));
+  rows.push(['รวมทั้งปี',a.totals.chanote,a.totals.ns3a,a.totals.ns3,a.totals.total,`${a.totals.active} เดือน`]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!merges']=[0,1,2,3].map(r=>({s:{r,c:0},e:{r,c:5}}));
+  ws['!cols']=[{wch:18},{wch:12},{wch:12},{wch:12},{wch:14},{wch:15}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'สรุปประจำปี');
+  XLSX.writeFile(wb,`ม10_สรุปประจำปี_พศ${+year+543}.xlsx`);
+  toast('✓ Export สรุปประจำปีเรียบร้อย','#0f766e');
+}
+
+function printAnnualSummary(year){
+  const a=annualSummaryData(year);
+  const org=document.getElementById('orgname').value||'';
+  const tam=document.getElementById('tambol').value||'';
+  const amp=document.getElementById('amphur').value||'';
+  const prov=document.getElementById('province').value||'';
+  const loc=[tam&&'ตำบล'+tam,amp&&'อำเภอ'+amp,prov&&'จังหวัด'+prov].filter(Boolean).join(' ');
+  const rows=a.months.map(r=>`<tr><td>${MONTH_NAMES_TH[r.month]}</td><td class="n">${r.chanote.toLocaleString()}</td><td class="n">${r.ns3a.toLocaleString()}</td><td class="n">${r.ns3.toLocaleString()}</td><td class="n total">${r.total.toLocaleString()}</td><td class="status">${r.hasData?'มีข้อมูล':'-'}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>สรุปประจำปี พ.ศ. ${+year+543}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>@page{size:A4 portrait;margin:12mm 12mm 14mm}*{box-sizing:border-box;font-family:'Sarabun','TH Sarabun New',sans-serif}body{margin:0;color:#111827;font-size:10.5pt}.head{text-align:center;border-bottom:2px solid #1e3a8a;padding-bottom:8px;margin-bottom:10px}.head h1{font-size:16pt;margin:0 0 3px}.head p{margin:2px 0;font-size:10pt}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}.card{border:1px solid #cbd5e1;border-radius:7px;padding:7px;text-align:center}.card b{display:block;font-size:14pt;color:#1d4ed8;margin-top:2px}.card span{font-size:8.5pt;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:9.5pt}th{background:#eaf0fb;border:1px solid #64748b;padding:5px 4px}td{border:1px solid #94a3b8;padding:4px 6px}td.n{text-align:right}td.total{font-weight:700}td.status{text-align:center}tr.sum td{background:#eff6ff;font-weight:700}.foot{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:36px;text-align:center;font-size:9pt}.sign{padding-top:28px;border-bottom:1px dotted #64748b;margin:0 20px 4px}.note{font-size:8pt;color:#64748b;margin-top:8px;text-align:right}</style></head><body>
+  <div class="head"><h1>สรุปผลการปรับปรุงข้อมูลตามมาตรา 10 ประจำปี</h1>${org?`<p><b>${org}</b></p>`:''}${loc?`<p>${loc}</p>`:''}<p>ประจำปี พ.ศ. ${+year+543}</p></div>
+  <div class="cards"><div class="card"><span>รายการรวมทั้งปี</span><b>${a.totals.total.toLocaleString()}</b><span>รายการ</span></div><div class="card"><span>เดือนที่มีข้อมูล</span><b>${a.totals.active}/12</b><span>เดือน</span></div><div class="card"><span>โฉนด</span><b>${a.totals.chanote.toLocaleString()}</b><span>รายการ</span></div><div class="card"><span>น.ส.3ก + น.ส.3</span><b>${(a.totals.ns3a+a.totals.ns3).toLocaleString()}</b><span>รายการ</span></div></div>
+  <table><thead><tr><th>เดือน</th><th>โฉนด</th><th>น.ส.3ก</th><th>น.ส.3</th><th>รวม</th><th>สถานะข้อมูล</th></tr></thead><tbody>${rows}<tr class="sum"><td>รวมทั้งปี</td><td class="n">${a.totals.chanote.toLocaleString()}</td><td class="n">${a.totals.ns3a.toLocaleString()}</td><td class="n">${a.totals.ns3.toLocaleString()}</td><td class="n">${a.totals.total.toLocaleString()}</td><td class="status">${a.totals.active} เดือน</td></tr></tbody></table>
+  <div class="foot"><div><div class="sign"></div><div>ผู้จัดทำ</div><div>วันที่ ........../........../..........</div></div><div><div class="sign"></div><div>ผู้ตรวจสอบ</div><div>วันที่ ........../........../..........</div></div></div>
+  <div class="note">หมายเหตุ: สรุปจากข้อมูลที่บันทึกในระบบ ณ วันที่พิมพ์เอกสาร</div>
+  </body></html>`;
+  const pw=window.open('','_blank','width=900,height=900,scrollbars=yes');
+  if(!pw){toast('กรุณาอนุญาต Pop-up แล้วลองใหม่','#ca8a04');return;}
+  pw.document.open();pw.document.write(html);pw.document.close();pw.focus();setTimeout(()=>pw.print(),650);
+}
+
+function exportSelectedMonthsWorkbook(months){
+  const wb=XLSX.utils.book_new(); const TYPE_N={chanote:'โฉนด',ns3a:'น.ส.3ก',ns3:'น.ส.3'};
+  months.sort().forEach(ym=>{const d=ensureDataset(ym);ALL_TABS.forEach(tab=>{if(!d[tab].length)return;const rows=[['รายการปรับปรุงข้อมูลการจัดส่งข้อมูลที่ดินตามมาตรา 10'],[document.getElementById('orgname').value||''],[`ตำบล${document.getElementById('tambol').value||''} อำเภอ${document.getElementById('amphur').value||''} จังหวัด${document.getElementById('province').value||''}`],[`ประจำเดือน${MONTH_NAMES_TH[+ym.slice(5,7)]} ${+ym.slice(0,4)+543} (${TYPE_N[tab]})`],['รหัสแปลงที่ดิน','เลขที่เอกสารสิทธิ์','มาตราส่วน','เลขที่ดิน','หน้าสำรวจ','ไร่','งาน','ตารางวา','subwa','ผู้ถือกรรมสิทธิ์ร่วม','เลขบัตรประจำตัว','คำนำหน้า','ชื่อ','สกุล','ที่อยู่','หมู่ที่','ซอย','หมู่บ้าน','ถนน','ตำบล','อำเภอ','จังหวัด','เบอร์โทร','รายการเปลี่ยนแปลง','วันที่ทำนิติกรรม']];d[tab].forEach(r=>rows.push([r.parcel_cod,r.doc_no,r.scale,r.land_no,r.survey_page,r.rai,r.ngan,r.wa,r.subwa,r.co_owner,r.id_card,r.title,r.fname,r.lname,r.address,r.moo,r.soi,r.village,r.road,r.tambol,r.amphur,r.province,r.tel,r.change_detail,r.change_date]));const ws=XLSX.utils.aoa_to_sheet(rows);ws['!merges']=[0,1,2,3].map(r=>({s:{r,c:0},e:{r,c:24}}));ws['!cols']=[{wch:13},{wch:10},{wch:9},{wch:8},{wch:9},{wch:3},{wch:4},{wch:8},{wch:6},{wch:6},{wch:14},{wch:14},{wch:30},{wch:12},{wch:5},{wch:5},{wch:18},{wch:10},{wch:12},{wch:9},{wch:7},{wch:8},{wch:46},{wch:10},{wch:9}];XLSX.utils.book_append_sheet(wb,ws,`${ym.replace('-','')}_${TYPE_N[tab]}`.slice(0,31));});});
+  const y=months[0].slice(0,4);XLSX.writeFile(wb,`ม10_หลายเดือน_พศ${+y+543}_${months.length}เดือน.xlsx`);toast(`✓ Export ${months.length} เดือนเรียบร้อย`,'#0d9488');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  buildTables(); loadData();
+  requestAnimationFrame(()=>{applyAutoColumnLayout(); ALL_TABS.forEach(renderPage);updatePrintHeader();updateMonthSummary();});
+  ['orgname','tambol','amphur','province'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{updatePrintHeader();autoSave();}));
+  document.getElementById('reportYear').addEventListener('change',changeActivePeriod);
+  document.getElementById('reportMonthNum').addEventListener('change',changeActivePeriod);
+  document.addEventListener('input',e=>{if(['INPUT','TEXTAREA'].includes(e.target.tagName)&&e.target.dataset.field)e.target.title=e.target.value;});
+  window.addEventListener('resize', debounce(applyAutoColumnLayout, 150));
+});
+</script>
+</body>
+</html>
